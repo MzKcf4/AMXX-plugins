@@ -15,12 +15,11 @@
 #include <cs_ham_bots_api>
 #include <reapi>
 #include <json>
-#include <customwpn_mode_api>
 #include <customwpn_json_const>
-#include "customwpn_variables.sma"
-#include "customwpn_stocks.sma"
-#include "customwpn_loader.sma"
-#include "customwpn_wpn_hooks.sma"
+#include "customwpn_core/customwpn_core_variables.sma"
+#include "customwpn_core/customwpn_core_stocks.sma"
+#include "customwpn_core/customwpn_core_precacher.sma"
+#include "customwpn_core/customwpn_core_hooks.sma"
 
 #pragma dynamic 10240
 
@@ -29,6 +28,18 @@
 #define AUTHOR "MzKc"
 
 new pcvar_wpnFree;
+
+public plugin_precache()
+{
+	// Forward to Loader to handle SC events
+	register_forward(FM_PrecacheEvent, "fw_PrecacheEvent_Post", 1)
+	g_Forwards[FW_GIVE_WPN] = CreateMultiForward("wpn_core_give_wpn", ET_IGNORE, FP_CELL, FP_CELL)
+	g_Forwards[FW_REGISTER_WPN_POST] = CreateMultiForward("wpn_register_wpn", ET_IGNORE, FP_CELL, FP_CELL)
+	g_SmokePuff_SprId = engfunc(EngFunc_PrecacheModel, "sprites/wall_puff1.spr");
+
+	precacher_load_weapons();
+	precache_special();
+}
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
@@ -129,18 +140,6 @@ public plugin_init() {
 
 	register_srvcmd("wpn_zombie_mode_on" , "enable_zombie_mode")
 	register_srvcmd("wpn_zombie_mode_off" , "disable_zombie_mode")
-}
-
-public plugin_precache()
-{
-	// Forward to Loader to handle SC events
-	register_forward(FM_PrecacheEvent, "fw_PrecacheEvent_Post", 1)
-	g_Forwards[FW_GIVE_WPN] = CreateMultiForward("wpn_core_give_wpn", ET_IGNORE, FP_CELL, FP_CELL)
-	g_Forwards[FW_REGISTER_WPN_POST] = CreateMultiForward("wpn_register_wpn", ET_IGNORE, FP_CELL, FP_CELL)
-	g_SmokePuff_SprId = engfunc(EngFunc_PrecacheModel, "sprites/wall_puff1.spr");
-
-	loader_load_weapons();
-	precache_special();
 }
 
 //======
