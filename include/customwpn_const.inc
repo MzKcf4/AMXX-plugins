@@ -22,37 +22,39 @@
 
 #define CSW_MASK 1000000			// iImpulse minus this value for real CSWID
 
-enum _:TOTAL_ARGS
+new const CSW_MAXBPAMMO[33] =
 {
-	ARG_POS_UID = 0,				// Uniquie id
-	ARG_POS_WID,				// Weapon id
-	ARG_POS_WPN_FAMILY, 		// Weapon family
-	ARG_POS_FIX_APPEAR, 
-	ARG_POS_OLD_WID,	// Csw Weapon name
-	ARG_POS_CSW_ID, 
-	ARG_POS_DISPLAY_NAME, // 
-	ARG_POS_MDL_V,
-	ARG_POS_MDL_P,
-	ARG_POS_MDL_W,
-	ARG_POS_IS_EXTERNAL,
-	ARG_POS_COST, 
-	ARG_POS_AUTO_SHOOT, 
-	ARG_POS_CLIP_RELOAD,
-	ARG_POS_OVERRIDE_SOUND, 
-	ARG_POS_SHOOT_SOUND, 
-	ARG_POS_SHOOT_SOUND_SLIC,
-	ARG_POS_DMG_MULTIPLIER, 
-	ARG_POS_RELOAD_TIME, 
-	ARG_POS_SHOOT_DELAY, 
-	ARG_POS_MOVE_SPEED, 
-	ARG_POS_RECOIL, 
-	ARG_POS_SHOOT_SEQ, 
-	ARG_POS_SHOOT_SEQ_SPECIAL, 
-	ARG_POS_RELOAD_SEQ, 
-	ARG_POS_DRAW_SEQ, 
-	ARG_POS_CLIP,
-	ARG_POS_ZDMG_MULTIPLIER, 
-	ARG_POS_ZKNOCKBACK, 
-	ARG_POS_ZTIER,
-	ARG_POS_ZAMMOPACK
+    -2,
+    52,
+    0,
+    90,
+    1,
+    32,
+    1,
+    100,
+    90,
+    1,
+    120,
+    100,
+    100,
+    90,
+    90,
+    90,
+    100,
+    120,
+    30,
+    120,
+    200,
+    32,
+    90,
+    120,
+    90,
+    2,
+    35,
+    90,
+    90,
+    0,
+    100,
+    -1,
+    -1
 }

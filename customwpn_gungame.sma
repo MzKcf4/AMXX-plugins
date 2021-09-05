@@ -3,28 +3,18 @@
 #include <amxmodx>
 #include <amxmisc>
 #include <fakemeta>
+#include <engine>
 #include <fun>
 #include <fakemeta_util>
 #include <cstrike>
 #include <hamsandwich>
-#include <wpn_const>
+#include <customwpn_const>
 #include <wpn_core>
-#include <customwpn_mode_api>
+#include <customwpn_loader_api>
 
-#define PLUGIN "Wpn-GunGame"
+#define PLUGIN "Custom Wpn - GunGame Mode"
 #define VERSION "1.0"
-#define AUTHOR "shanaO12"
-
-#define RIFLE_COUNT 4		// 5
-#define BOLT_SNIPER_COUNT 2
-#define AUTO_SNIPER_COUNT 2
-#define MG_COUNT 2
-#define SMG_COUNT 4		// 10
-#define SHOTGUN_COUNT 3		// 12
-#define PISTOL_COUNT 4		// 16
-
-
-#define KILL_PER_LEVEL 2
+#define AUTHOR "MzKc"
 
 #define TASK_RESPAWN	300
 #define TASK_STRIP_GIVE 400
@@ -34,19 +24,21 @@
 #define TEAM_CT 1
 
 #define KNIFE_SPEED 350
-#define BOT_KNIFE_KILL_COUNT 1
 
-new g_bModActive = true;
+#define WBOX "models/w_weaponbox.mdl"
+#define BOMB "models/w_backpack.mdl"
+#define SHLD "models/w_shield.mdl"
+new g_entid[MAX_PLAYERS + 1]
+new g_maxents
+
 new g_iWinTeam = -1;
 
 new g_HamBot;
 
 
 new const wpnOrder[] = { RIFLE_TYPE , BOLT_SNIPER_TYPE, AUTO_SNIPER_TYPE, MG_TYPE,  SMG_TYPE , SHOTGUN_TYPE  , PISTOL_TYPE };
-new const wpnMax[] = {RIFLE_COUNT ,BOLT_SNIPER_COUNT,AUTO_SNIPER_COUNT, MG_COUNT, SMG_COUNT ,SHOTGUN_COUNT , PISTOL_COUNT };
 
 new Array:g_AryLevelWpnId;
-// new g_iWpnlevel[MAX_PLAYERS + 1];		// Player's wpn level
 
 new g_iTeamWpnLevel[2];				// Team wpn level;
 new g_iTeamKillUntilNextLevel[2]	
@@ -54,91 +46,76 @@ new g_iTeamKillUntilNextLevel[2]
 new const Float:g_fDelay = 5.0;
 new g_bPlayerLastKill[MAX_PLAYERS + 1]		// Knife
 
-new g_botTeam = TEAM_CT;
-
 new cvar_sp_time;
 new cvar_lv_per_kill_t;
 new cvar_lv_per_kill_ct;
-// new g_bSpawnProtected[MAX_PLAYERS + 1]
+new cvar_auto_config;
 
-new g_szGameEndSound[] = "sound/events/task_complete.wav";
-new g_szLevelUpSound[] = "sound/events/enemy_died.wav";
+new const g_szGameEndSound[] = "sound/events/task_complete.wav";
+new const g_szLevelUpSound[] = "sound/events/enemy_died.wav";
 new const CT_WIN_SOUND[] = "sound/radio/ctwin.wav";
 new const T_WIN_SOUND[] = "sound/radio/terwin.wav";
 new const ARMOURY_ENTITY[] = "armoury_entity";
 
-new const CSW_MAXAMMO[33]=
-{
-    -2,
-    52,
-    0,
-    90,
-    1,
-    32,
-    1,
-    100,
-    90,
-    1,
-    120,
-    100,
-    100,
-    90,
-    90,
-    90,
-    100,
-    120,
-    30,
-    120,
-    200,
-    32,
-    90,
-    120,
-    90,
-    2,
-    35,
-    90,
-    90,
-    0,
-    100,
-    -1,
-    -1
-}
-
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	// g_iLevelPerKill = 2;
 	g_AryLevelWpnId = ArrayCreate();
+	g_maxents = get_global_int(GL_maxEntities)
 
 	cvar_sp_time = register_cvar("gg_sp_time","5.0");
 	cvar_lv_per_kill_t = register_cvar("gg_lv_per_kill_t" , "2");
 	cvar_lv_per_kill_ct = register_cvar("gg_lv_per_kill_ct" , "2");
+	cvar_auto_config = register_cvar("gg_auto_config" , "1");
 	
 	RegisterHam(Ham_Killed,"player","ham_player_killed_post",1);
 	RegisterHam(Ham_Spawn, "player", "ham_Player_Spawn_Post", 1)
+
+	register_forward(FM_SetModel, "fw_set_model")
 	// Handle the Corpse
 	register_message(get_user_msgid("ClCorpse"),"message_clcorpse");
 	register_logevent("Event_RoundStart", 2, "1=Round_Start") 
+	register_logevent("JoinTeam", 3, "1=joined team")
+	register_event( "TeamInfo", "join_team", "a")
 	
 	register_concmd("gg_set_wpn_lv_t" , "set_wpn_level_t")
 	register_concmd("gg_set_wpn_lv_ct" , "set_wpn_level_ct")
 	register_concmd("gg_restart" , "game_restart")
-	register_concmd("gg_bot_team_ct" , "init_bot_ct")
-	register_concmd("gg_bot_team_t" , "init_bot_t")
 	
-	register_clcmd( "joinclass", "cmdJoinClass" );
-	register_clcmd( "drop", "cmd_Drop" );
 
+	register_clcmd( "joinclass", "cmdJoinClass" );
+	register_clcmd( "drop", "cmdDropWeapon" );
+
+	load_config_file();
 	init();
 }
 
 public plugin_precache() 
 {    	
-	wpn_mode_set(WPN_MODE_GUNGAME)
 	precache_generic(g_szGameEndSound)
 	precache_generic(g_szLevelUpSound)
 	register_forward(FM_Spawn,"fw_Spawn_Pre")
 }
 
+public plugin_end()
+{
+	ArrayDestroy(g_AryLevelWpnId);
+}
+
+load_config_file()
+{
+	// get path from amxx config dir
+	new szFilePath[256]
+	get_configsdir(szFilePath, charsmax(szFilePath)) // now config dir in path stored
+	// store file dir in path
+	format(szFilePath, charsmax(szFilePath), "%s/customwpn_gungame.cfg", szFilePath) // store complete path to file
+
+	if(file_exists(szFilePath))
+	{
+		server_cmd("exec %s", szFilePath);
+	}
+}
+
+// Removes the guns on the map
 public fw_Spawn_Pre(ent)
 {
     static szClassName[32]
@@ -146,10 +123,8 @@ public fw_Spawn_Pre(ent)
     if(pev_valid(ent))
     {    
         pev(ent,pev_classname,szClassName,charsmax(szClassName))
-        console_print(0 , "Spawned : %s" , szClassName);
         if(equali(szClassName,ARMOURY_ENTITY))
         {
-            server_print("REMOVE:%s",szClassName)
             engfunc(EngFunc_RemoveEntity, ent)
             return FMRES_SUPERCEDE
         }        
@@ -158,52 +133,62 @@ public fw_Spawn_Pre(ent)
     return FMRES_IGNORED
 }
 
-public cmdJoinClass( id )
+public JoinTeam()
 {
-    update_kill_per_level();
-    return PLUGIN_CONTINUE;
+	auto_config();
+}
+
+public join_team()
+{    
+    new id = read_data(1)
+    static user_team[32]
+    
+    read_data(2, user_team, 31)    
+    
+    if(!is_user_connected(id))
+        return PLUGIN_CONTINUE    
+    
+    auto_config();
+    switch(user_team[0])
+    {
+        case 'C':  
+        {
+            // player join to ct's        
+        }
+            
+        case 'T': 
+        {
+            // player join to terrorist
+        }
+        
+        
+        case 'S':  
+        {
+            // player join to spectators
+        }
+        
+        
+    }
+    return PLUGIN_CONTINUE
+    
 } 
 
-public cmd_Drop(id)
+public cmdJoinClass( id )
+{
+	auto_config();
+	return PLUGIN_CONTINUE;
+} 
+
+// Disable weapon dropping
+public cmdDropWeapon(id)
 {
     return PLUGIN_HANDLED;
 }
 
-update_kill_per_level()
-{
-	static players[MAX_PLAYERS] , iCount;
-	if(g_botTeam == TEAM_T)
-	{
-		get_players_ex(players, iCount, GetPlayers_ExcludeBots | GetPlayers_MatchTeam, "CT")
-
-		set_pcvar_num(cvar_lv_per_kill_ct , iCount+1)
-		set_pcvar_num(cvar_lv_per_kill_t , iCount)
-	}
-	else 
-	{
-		get_players_ex(players, iCount, GetPlayers_ExcludeBots | GetPlayers_MatchTeam, "TERRORIST")
-		set_pcvar_num(cvar_lv_per_kill_ct , iCount)
-		set_pcvar_num(cvar_lv_per_kill_t , iCount+1)
-	}
-	set_level_message();
-	return PLUGIN_HANDLED;
-}
-
-
-public init_bot_ct()
-{
-	g_botTeam = TEAM_CT;
-}
-
-public init_bot_t()
-{
-	g_botTeam = TEAM_T;
-}
-
 public Event_RoundStart(id)
 {
-	if(!g_bModActive)	return PLUGIN_CONTINUE;
-	
+	auto_config();
+
 	static players[MAX_PLAYERS] , iCount , i;
 	
 	get_players_ex(players, iCount, GetPlayers_ExcludeDead)
@@ -211,16 +196,30 @@ public Event_RoundStart(id)
 	{
 		static iPlayerId; iPlayerId = players[i];
 		cs_set_user_money(iPlayerId , 0);
-		
 	}
 	set_level_message();
 	return PLUGIN_CONTINUE;
+}
+
+auto_config()
+{
+	if(!get_pcvar_num(cvar_auto_config))
+		return;
+
+	static players[MAX_PLAYERS] , iCountCt , iCountT;
+	get_players_ex(players, iCountT, GetPlayers_MatchTeam, "TERRORIST")
+	set_pcvar_num(cvar_lv_per_kill_t , (iCountT+1))
+
+	get_players_ex(players, iCountCt, GetPlayers_MatchTeam, "CT")
+	set_pcvar_num(cvar_lv_per_kill_ct , (iCountCt+1))
 	
+	console_print(0 , "%i , %i" , iCountT , iCountCt);
+	set_level_message();
 }
 
 public game_restart()
 {
-	update_kill_per_level();
+	auto_config()
 	
 	g_iTeamKillUntilNextLevel[TEAM_T] = get_pcvar_num(cvar_lv_per_kill_t);
 	g_iTeamKillUntilNextLevel[TEAM_CT] = get_pcvar_num(cvar_lv_per_kill_ct);
@@ -229,10 +228,8 @@ public game_restart()
 
 	g_iWinTeam = -1
 
-	server_cmd("bot_all_weapons")
 	server_cmd("sv_restart 1")
-	server_cmd("mp_autoteambalance 0")
-	server_cmd("mp_limitteams 20");
+
 	set_level_message();
 }
 
@@ -246,16 +243,6 @@ public init()
 	initWpnLevel();
 	set_level_message();
 	
-	console_cmd(0 , "bot_all_weapons");
-	console_cmd(0 , "mp_roundtime 9");
-	console_cmd(0 , "mp_startmoney 800");
-	console_cmd(0 , "mp_freezetime 0");
-	console_cmd(0 , "sv_maxspeed 600");
-	console_cmd(0 , "mp_friendlyfire 0");
-	console_cmd(0 , "mp_round_infinite 1");
-	console_cmd(0 , "sypb_lockzbot 0");
-
-	g_bModActive = true;
 	return PLUGIN_HANDLED;
 }
 
@@ -264,33 +251,16 @@ initWpnLevel()
 	for(new i = 0 ; i < sizeof(wpnOrder) ; i++)
 	{
 		new Array:aryWpn = wpn_core_get_wpn_of_type(wpnOrder[i]);
-		new iArySize = ArraySize(aryWpn);
-		new iCount;
-		
-		new iRemaining = wpnMax[i];
-		if(iArySize < wpnMax[i])
-		{
-			for(iCount = 0 ;iCount < iArySize ; iCount++)
-				ArrayPushCell(g_AryLevelWpnId , ArrayGetCell(aryWpn, iCount));
-				
-		}
-		else
-		{
-			while(iRemaining > 0)
-			{
-				new idx = random_num(0 , iArySize-1);
-				ArrayPushCell(g_AryLevelWpnId , ArrayGetCell(aryWpn, idx));
-				ArrayDeleteItem(aryWpn , idx);
-				iRemaining--;
-				iArySize = ArraySize(aryWpn);
-			}
-		}
+
+		for(new iCount = 0 ;iCount < ArraySize(aryWpn) ; iCount++)
+			ArrayPushCell(g_AryLevelWpnId , ArrayGetCell(aryWpn, iCount));
+
+		ArrayDestroy(aryWpn);
 	}
 }
 
 public set_level_message()
 {
-	if(!g_bModActive)	return PLUGIN_HANDLED;
 	set_hudmessage(255, 0, 0, 0.05, -1.0, 0, 0.0, 540.0, 0.1, 0.2, 2)
 	
 	static players[MAX_PLAYERS] , iCount , i;
@@ -306,6 +276,7 @@ public set_level_message()
 			szMsg = "Counter-Terrorist Win";
 
 	}
+
 	for( i = 0 ; i < iCount ; i++)
 	{
 		static iPlayerId; iPlayerId = players[i];
@@ -385,9 +356,7 @@ public get_team_wpn_level_progress(iTeam)
 }
 
 public client_putinserver(id)
-{
-	// Safety_Connected(id)
-	
+{	
 	if(!g_HamBot && is_user_bot(id))
 	{
 		g_HamBot = 1
@@ -423,8 +392,6 @@ public Do_Register_HamBot(id)
 
 public ham_player_killed_post(victim,killer,gib)
 {
-	if(!g_bModActive)		return HAM_IGNORED;
-
 	if(!is_user_connected(victim))  return HAM_IGNORED;
 
 	
@@ -490,16 +457,6 @@ set_wpn_level(iTeam, iLevel)
 	
 	level_up_team(iTeam);
 	
-	/*
-	// Post check to for kills setting for knife wpn (Bot only)
-	if(is_last_wpn_level(iTeam) && g_botTeam == iTeam)
-	{
-		if(g_botTeam == iTeam)
-			g_iTeamKillUntilNextLevel[iTeam] = BOT_KNIFE_KILL_COUNT
-		else
-			g_iTeamKillUntilNextLevel[iTeam] = iKillPerLv/2;
-	}
-	*/
 	set_level_message();
 }
 
@@ -550,7 +507,7 @@ is_last_wpn_level(iTeam)
 // bring someone back to life
 public begin_respawn(id)
 {
-	if(!g_bModActive || !is_user_connected(id))
+	if(!is_user_connected(id))
 		return;
 
 	// now on spectator
@@ -560,33 +517,15 @@ public begin_respawn(id)
 	if(is_user_alive(id) && !pev(id,pev_iuser1))
 		return;
 
-	// round is over, or bomb is planted
-	// if(roundEnded || (bombStatus[3] == BOMB_PLANTED && !get_pcvar_num(gg_dm_spawn_afterplant)))
-	// 	return;
-
-	// new Float:delay = get_pcvar_float(gg_dm_spawn_delay);
-	// if(delay < 0.1) delay = 0.1;
-
-	// new dm_countdown = get_pcvar_num(gg_dm_countdown);
-	
-	/*
-	if((dm_countdown & 1) || (dm_countdown & 2))
-	{
-		respawn_timeleft[id] = floatround(delay);
-		respawn_countdown(id);
-	}
-	*/
-
 	remove_task(TASK_RESPAWN+id);
 	set_task(g_fDelay,"respawn",TASK_RESPAWN+id);
-	// set_task(g_fDelay+0.1 , "Strip_and_Give_Wpn" , TASK_STRIP_GIVE+id);
 }
 
 // REALLY bring someone back to life
 public respawn(taskid)
 {
 	new id = taskid-TASK_RESPAWN;
-	if(!is_user_connected(id) || !g_bModActive) return;
+	if(!is_user_connected(id)) return;
 
 	// alive, and not in the broken sort of way
 	if(is_user_alive(id)) return;
@@ -621,7 +560,6 @@ public ham_Player_Spawn_Post(iPlayer)
 public remove_spawn_protection(taskid)
 {
 	new id = taskid-TASK_REMOVE_PROTECTION;
-	// spawnProtected[id] = 0;
 
 	if(!is_user_connected(id)) return;
 	
@@ -643,29 +581,23 @@ public Strip_and_Give_Wpn(taskid)
 	if(g_iWinTeam != -1)
 		return;
 
-	// Simple and Trash temp fix
+	// Last weapon , should be a knife.
 	if(g_iTeamWpnLevel[iTeam] >= ArraySize(g_AryLevelWpnId))
 	{
 		g_bPlayerLastKill[playerId] = true;
 		give_item(playerId, "weapon_knife")
-		for(new cswId = 0 ; cswId < sizeof(CSW_MAXAMMO) ; cswId++)
-		{
-			if(CSW_MAXAMMO[cswId] > 0)
-				cs_set_user_bpammo(playerId, cswId, CSW_MAXAMMO[cswId])
-		}
 		set_user_maxspeed(playerId, float(KNIFE_SPEED));
 	}
 	else
 	{
 		static wpnid; wpnid = ArrayGetCell(g_AryLevelWpnId,  g_iTeamWpnLevel[iTeam]);
-		console_print(0 , "Team is now level %i , giving wpnId %i to %i" , g_iTeamWpnLevel[iTeam], wpnid , playerId);
 		wpn_core_give_wpn(playerId , wpnid);
 		give_item(playerId, "weapon_knife")
 		
 		static cswId; cswId = wpn_core_get_wpn_cswId(wpnid);
 		if(GUN_TYPE & (1 << cswId))
 		{
-			cs_set_user_bpammo(playerId, cswId, CSW_MAXAMMO[cswId])
+			cs_set_user_bpammo(playerId, cswId, CSW_MAXBPAMMO[cswId])
 		}
 	}
 }
@@ -673,78 +605,50 @@ public Strip_and_Give_Wpn(taskid)
 // a corpse is to be set, stop player shells bug (thanks sawce)
 public message_clcorpse(msg_id,msg_dest,msg_entity)
 {
-	if(!g_bModActive || get_msg_args() < 12)
+	if(get_msg_args() < 12)
 		return PLUGIN_CONTINUE;
 
 	return PLUGIN_HANDLED;
 }
 
-/*
-// SMART way to check 
-// an entity is given a model, check for silenced/burst status
-public fw_setmodel(ent,model[])
-{
-	if(!ggActive) return FMRES_IGNORED;
 
-	new owner = pev(ent,pev_owner);
+// From No Weapon Drop on Death by VEN (https://forums.alliedmods.net/showthread.php?p=202171)
+public fw_set_model(entid, model[]) {
+	if (!is_valid_ent(entid) || !equal(model, WBOX, 9))
+		return FMRES_IGNORED
 
-	// no owner
-	if(!is_user_connected(owner)) return FMRES_IGNORED;
+	new id = entity_get_edict(entid, EV_ENT_owner)
+	if (!id || !is_user_connected(id) || is_user_alive(id))
+		return FMRES_IGNORED
 
-	static classname[24]; // the extra space is used later
-	pev(ent,pev_classname,classname,10);
-
-	// not a weapon
-	// checks for weaponbox, weapon_shield
-	if(classname[8] != 'x' && !(classname[6] == '_' && classname[7] == 's' && classname[8] == 'h'))
-		return FMRES_IGNORED;
-
-	// makes sure we don't get memory access error,
-	// but also helpful to narrow down matches
-	new len = strlen(model);
-
-	// ignore weaponboxes whose models haven't been set to correspond with their weapon types yet
-	// checks for models/w_weaponbox.mdl
-	if(len == 22 && model[17] == 'x') return FMRES_IGNORED;
-
-	// ignore C4
-	// checks for models/w_backpack.mdl
-	if(len == 21 && model[9] == 'b') return FMRES_IGNORED;
-
-	// checks for models/w_usp.mdl, usp, models/w_m4a1.mdl, m4a1
-	if((len == 16 && model[10] == 's' && lvlWeapon[owner][1] == 's')
-	|| (len == 17 && model[10] == '4' && lvlWeapon[owner][1] == '4') )
-	{
-		copyc(model,len-1,model[contain_char(model,'_')+1],'.'); // strips off models/w_ and .mdl
-		formatex(classname,23,"weapon_%s",model);
-
-		// remember silenced status
-		new wEnt = fm_find_ent_by_owner(maxPlayers,classname,ent);
-		if(pev_valid(wEnt)) silenced[owner] = cs_get_weapon_silen(wEnt);
+	if (equal(model, SHLD)) {
+		kill_entity(entid)
+		return FMRES_IGNORED
 	}
 
-	// checks for models/w_glock18.mdl, glock18, models/w_famas.mdl, famas
-	else if((len == 20 && model[15] == '8' && lvlWeapon[owner][6] == '8')
-	|| (len == 18 && model[9] == 'f' && model[10] == 'a' && lvlWeapon[owner][0] == 'f' && lvlWeapon[owner][1] == 'a') )
-	{
-		copyc(model,len-1,model[contain_char(model,'_')+1],'.'); // strips off models/w_ and .mdl
-		formatex(classname,23,"weapon_%s",model);
-
-		// remember burst status
-		new wEnt = fm_find_ent_by_owner(maxPlayers,classname,ent);
-		if(pev_valid(wEnt)) silenced[owner] = cs_get_weapon_burst(wEnt);
-	}
-		
-	// if owner is dead, remove it if we need to
-	if(get_user_health(owner) <= 0 && get_pcvar_num(gg_dm) && !get_pcvar_num(gg_pickup_others))
-	{
-		dllfunc(DLLFunc_Think,ent);
-		return FMRES_SUPERCEDE;
+	if (equal(model, WBOX)) {
+		g_entid[id] = entid
+		return FMRES_IGNORED
 	}
 
-	return FMRES_IGNORED;
+	if (entid != g_entid[id])
+		return FMRES_IGNORED
+
+	g_entid[id] = 0
+
+	if (equal(model, BOMB))
+		return FMRES_IGNORED
+
+	for (new i = 1; i <= g_maxents; ++i) {
+		if (is_valid_ent(i) && entid == entity_get_edict(i, EV_ENT_owner)) {
+			kill_entity(entid)
+			kill_entity(i)
+		}
+	}
+
+	return FMRES_IGNORED
 }
-*/
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1041\\ f0\\ fs16 \n\\ par }
-*/
+
+stock kill_entity(id) {
+	entity_set_int(id, EV_INT_flags, entity_get_int(id, EV_INT_flags)|FL_KILLME)
+}

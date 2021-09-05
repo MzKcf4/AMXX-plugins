@@ -3,7 +3,7 @@
 #include <ini_file>
 #include <customwpn_loader_api>
 #include <customwpn_json_const>
-#include <wpn_const>
+#include <customwpn_const>
 #include <json>
 
 #define PLUGIN "CustomWpn Loader - General"
@@ -112,6 +112,9 @@ pick_wpn(JSON:jFullWpnObj)
 
 pick_wpn_of_type(JSON:jFullWpnObj, iTargetCswType, iLoadCount)
 {
+	if(iLoadCount <= 0)
+		return;
+
 	new JSON:jWpnOfType = get_wpn_of_type(jFullWpnObj, iTargetCswType)
 	new JSON:jWpnEntry;	
 

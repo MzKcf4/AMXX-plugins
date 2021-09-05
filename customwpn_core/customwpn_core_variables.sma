@@ -34,8 +34,6 @@ new const g_CSW_ENT_NAME[][] = {"weapon_thighpack", "weapon_p228", "weapon_shiel
 "weapon_sg552", "weapon_ak47", "weapon_knife", "weapon_p90", "w_backpack"};
 
 // ================================== Models & Resources ============================= //
-new Array:g_ary_iAllowedWpnImpluse 				// The wpn id marked by other plugins to load
-
 new const SC_PREFIX[] = "events/";
 new const SC_EXT[] = ".sc";
 new const g_CSW_SC[][] = {"", "p228", "", "scout", "", "xm1014", "",
@@ -148,8 +146,7 @@ new g_iWpnShootSeqId[MAX_WPN]         					// The 'shoot"(or shoot-unsil) sequen
 new g_iWpnShootSecondaySeqId[MAX_WPN]       			// The 'shoot" slience sequence id in the v_model for USP and M4A1 , OR , right shoot sequence for elite
 new g_iWpnReloadSeqId[MAX_WPN]        					// The "reload" sequence id in the v_model
 new g_iWpnDrawSeqId[MAX_WPN]         					// The "draw" sequence id in the v_model 
-new bool:g_bWpnExternal[MAX_WPN]						// If this wpn is controlled by external plugin
-new g_iWpnSpecialId[MAX_WPN]				// > -1 if this wpn has special attack / handling
+new g_iWpnSpecialId[MAX_WPN]				// > -1 , if this wpn has special attack / handling
 
 new g_iWpnClip[MAX_WPN]						// The clip size of the weapon
 

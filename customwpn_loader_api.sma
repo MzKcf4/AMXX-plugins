@@ -19,8 +19,8 @@ new JSON:loadedWpnJsonObj;
 public plugin_natives()
 {
 	register_library("customwpn_loader_api");
-	register_native("api_load_all_wpn", "api_load_all_wpn");
-	register_native("api_get_loaded_wpn", "api_get_loaded_wpn");
+	register_native("api_loader_load_all_wpn", "api_loader_load_all_wpn");
+	register_native("api_loader_get_loaded_wpn", "api_loader_get_loaded_wpn");
 	register_native("check_count", "check_count");
 }
 
@@ -29,10 +29,10 @@ public plugin_init()
 	register_plugin(PLUGIN, VERSION, AUTHOR)
 }
 
-public api_load_all_wpn(iPlugin , iParams)
+public api_loader_load_all_wpn(iPlugin , iParams)
 {
 	// get path from amxx config dir
-	new path[64]
+	new path[256]
 	get_configsdir(path, charsmax(path)) // now config dir in path stored
 	
 	// store file dir in path
@@ -40,17 +40,11 @@ public api_load_all_wpn(iPlugin , iParams)
 	loadedWpnJsonObj = json_parse(path, true);
 }
 
-public JSON:api_get_loaded_wpn(iPlugin , iParams)
+public JSON:api_loader_get_loaded_wpn(iPlugin , iParams)
 {
 	return loadedWpnJsonObj;
 }
 
-public api_update_loaded_wpn(iPlugin , iParams)
-{
-	new JSON:jUpdatedWpnObj = get_param_byref(1);
-	loadedWpnJsonObj = json_deep_copy(jUpdatedWpnObj);
-	json_free(jUpdatedWpnObj);
-}
 
 public check_count(iPlugin , iParams)
 {

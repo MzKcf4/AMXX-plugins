@@ -9,9 +9,8 @@
 #include <fun>
 #include <string>
 #include <stripweapons>
-#include <wpn_const>
+#include <customwpn_const>
 #include <wpn_core>
-#include <gfl_voice>
 #include <cs_ham_bots_api>
 #include <reapi>
 #include <json>
@@ -27,14 +26,17 @@
 #define VERSION "1.0"
 #define AUTHOR "MzKc"
 
+// ToDo: 
+// fw_TraceHull move to separate plugin
+// read pcvar from config
+
 new pcvar_wpnFree;
+new pcvar_wpnCanBuy;
 
 public plugin_precache()
 {
 	// Forward to Loader to handle SC events
 	register_forward(FM_PrecacheEvent, "fw_PrecacheEvent_Post", 1)
-	g_Forwards[FW_GIVE_WPN] = CreateMultiForward("wpn_core_give_wpn", ET_IGNORE, FP_CELL, FP_CELL)
-	g_Forwards[FW_REGISTER_WPN_POST] = CreateMultiForward("wpn_register_wpn", ET_IGNORE, FP_CELL, FP_CELL)
 	g_SmokePuff_SprId = engfunc(EngFunc_PrecacheModel, "sprites/wall_puff1.spr");
 
 	precacher_load_weapons();
@@ -73,19 +75,11 @@ public plugin_init() {
 	RegisterHamBots(Ham_TraceAttack, "fw_TraceAttack_Player")
 
 	// Extended knife dmg
-	// register_forward(FM_TraceLine, "fw_TraceLine")
 	register_forward(FM_TraceHull, "fw_TraceHull")
-	
-	// So maybe use bits of CSWID to NOT register hooks repeatly?
-	new registeredCswId = 0;
-	console_print(0 , "[CORE] WpnCount is : %i" , g_iWpnCount)
+
 	for(new i = 0 ; i < g_iWpnCount ; i++)
 	{
 		register_clcmd( g_szWpnId[i] , "CmdSelectWpn" );
-		// Don't let following func register twice for same CswId
-		if(Get_BitVar(registeredCswId , g_iWpnCswId[i]))
-			continue;
-		Set_BitVar(registeredCswId,g_iWpnCswId[i])
 
 		// HamItemDeploy -- When player switchs (deploys) to that weapon
 		RegisterHam(Ham_Item_Deploy, g_szWpnIdOld[i], "HamF_Item_Deploy_Post", .Post = true)
@@ -124,9 +118,6 @@ public plugin_init() {
 	
 	// FM_SetModel calls when any model is deployed to the world. (e.g dropping ) , so also used to catch "Drop" event
 	register_forward(FM_SetModel, "fw_SetModel")
-
-	// ToDo: 
-	// RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_m249", "fw_Weapon_PrimaryAttack_Post", 1)	// For Muzzle
 	
 	// This blocks client from sending their weapon ATTACK info
 	register_forward(FM_UpdateClientData, "fw_UpdateClientData_Post", 1);
@@ -137,22 +128,10 @@ public plugin_init() {
 	register_clcmd( "WpnMenu","WpnMenu" );
 	
 	pcvar_wpnFree = register_cvar("wpn_free" , "0")
-
-	register_srvcmd("wpn_zombie_mode_on" , "enable_zombie_mode")
-	register_srvcmd("wpn_zombie_mode_off" , "disable_zombie_mode")
+	pcvar_wpnCanBuy = register_cvar("wpn_can_buy" , "1")
 }
 
 //======
-
-public enable_zombie_mode()
-{
-	g_bIsZombieMode = true;
-}
-
-public disable_zombie_mode()
-{
-	g_bIsZombieMode = false;	
-}
 
 public client_putinserver(id)
 {
@@ -221,6 +200,7 @@ public fw_EmitSound(id, channel, sample[], Float:volume, Float:attn, flag, pitch
 
 // ========================== Knife attack radius related ===================================
 
+// ToDo: Should move this to a separate plugin
 // This is fired when slashing knife
 public fw_TraceHull(Float:vector_start[3], Float:vector_end[3], ignored_monster, hull, id, handle)
 {
@@ -359,8 +339,9 @@ public CmdBuyWpn(playerId)
 
 public BuyWpn(wpnid , playerId)
 {
-	if(g_bIsZombieMode && g_iWpnCost[wpnid] > 0 && (get_pcvar_num(pcvar_wpnFree) == 0))
+	if(get_pcvar_num(pcvar_wpnCanBuy) == 0)
 		return PLUGIN_HANDLED;
+
 	if(get_pcvar_num(pcvar_wpnFree) == 0)
 	{
 		static iPlayerMoney; iPlayerMoney = cs_get_user_money(playerId)
@@ -391,45 +372,20 @@ public CmdGiveWpn(playerId, wpnid)
 	// Sets which player (bit) owns the modified gun
 	Set_BitVar(g_HadWpn[wpnid], playerId)
 
-	// If controlled by external plugin , use forwards to give
-	if(g_bWpnExternal[wpnid])
-		ExecuteForward(g_Forwards[FW_GIVE_WPN], g_ForwardResult , playerId , wpnid)
-	else
+	give_item(playerId, g_szWpnIdOld[wpnid])
+
+	// Sets custom clip if any
+	if(g_iWpnClip[wpnid] > 0)
 	{
-		give_item(playerId, g_szWpnIdOld[wpnid])
+		static ent; ent = fm_get_user_weapon_entity(playerId, g_iWpnCswId[wpnid])
+		if(!pev_valid(ent)) 
+			return PLUGIN_HANDLED;
 
-		// Plays the deploy voice
-		gfl_voice_play_deploy_voice(playerId, g_szModel_V[wpnid])
-
-		// Sets custom clip if any
-		if(g_iWpnClip[wpnid] > 0)
-		{
-			static ent; ent = fm_get_user_weapon_entity(playerId, g_iWpnCswId[wpnid])
-			if(!pev_valid(ent)) 
-				return PLUGIN_HANDLED;
-
-			cs_set_weapon_ammo(ent, g_iWpnClip[wpnid]);
-		}
+		cs_set_weapon_ammo(ent, g_iWpnClip[wpnid]);
 	}
+	
 
 	return PLUGIN_HANDLED
-	/*
-	// Clip & Ammo
-	static Ent; Ent = fm_get_user_weapon_entity(id, CSW_AK47)
-	if(!pev_valid(Ent)) return
-	
-	cs_set_weapon_ammo(Ent, 30);
-	cs_set_user_bpammo(id, CSW_AK47, 90)
-	
-	
-	message_begin(MSG_ONE_UNRELIABLE, gMsgCurWeapon, _, id)
-	write_byte(1)
-	write_byte(CSW_AK47)
-	write_byte(30)
-	message_end()
-	*/
-	// Set custom MuzzleFlash , if any 
-	// MuzzleFlash_Set(id, Muzzleflash, 0.1)
 }
 
 // ======================= Menu ================================ //
@@ -767,25 +723,6 @@ stock fm_get_weapon_ent_owner(ent)
 		return -1;
 	
 	return get_pdata_cbase(ent, OFFSET_WEAPON_OWNER, OFFSET_LINUX_WEAPONS);
-}
-
-// Convert from weapon_a -> a
-stock extract_weapon_name(szWpn[])
-{
-	new szWpnName[32];
-	replace_stringex(szWpnName , sizeof(szWpnName[]) , "weapon_" , szWpn);
-	return szWpnName;
-}
-
-stock find_str_in_array(szAry[][] , str[] , iArySize)
-{
-	static i
-	for(i = 0 ; i < iArySize ; i++)
-	{
-		if(equali(szAry[i] , str))
-			return i;
-	}
-	return -1;
 }
 
 // =============================================================
