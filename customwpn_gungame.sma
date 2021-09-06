@@ -71,11 +71,13 @@ public plugin_init() {
 	RegisterHam(Ham_Spawn, "player", "ham_Player_Spawn_Post", 1)
 
 	register_forward(FM_SetModel, "fw_set_model")
+	register_forward(FM_ClientKill, "fw_client_kill")
 
 	// Handle the Corpse
 	register_message(get_user_msgid("ClCorpse"),"message_clcorpse");
 	register_logevent("Event_RoundStart", 2, "1=Round_Start") 
 	register_logevent("JoinTeam", 3, "1=joined team")
+
 	
 	register_concmd("gg_set_wpn_lv_t" , "set_wpn_level_t")
 	register_concmd("gg_set_wpn_lv_ct" , "set_wpn_level_ct")
@@ -134,6 +136,10 @@ public fw_Spawn_Pre(ent)
     return FMRES_IGNORED
 }
 
+public fw_client_kill(id)
+{
+	return FMRES_SUPERCEDE
+}
 
 public JoinTeam()
 {
