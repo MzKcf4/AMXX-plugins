@@ -41,7 +41,7 @@ new const wpnOrder[] = { RIFLE_TYPE , BOLT_SNIPER_TYPE, AUTO_SNIPER_TYPE, MG_TYP
 new Array:g_AryLevelWpnId;
 
 new g_iTeamWpnLevel[2];				// Team wpn level;
-new g_iTeamKillUntilNextLevel[2]	
+new g_iTeamCurrLevelKill[2];
 
 new const Float:g_fDelay = 5.0;
 new g_bPlayerLastKill[MAX_PLAYERS + 1]		// Knife
@@ -71,11 +71,11 @@ public plugin_init() {
 	RegisterHam(Ham_Spawn, "player", "ham_Player_Spawn_Post", 1)
 
 	register_forward(FM_SetModel, "fw_set_model")
+
 	// Handle the Corpse
 	register_message(get_user_msgid("ClCorpse"),"message_clcorpse");
 	register_logevent("Event_RoundStart", 2, "1=Round_Start") 
 	register_logevent("JoinTeam", 3, "1=joined team")
-	register_event( "TeamInfo", "join_team", "a")
 	
 	register_concmd("gg_set_wpn_lv_t" , "set_wpn_level_t")
 	register_concmd("gg_set_wpn_lv_ct" , "set_wpn_level_ct")
@@ -86,6 +86,7 @@ public plugin_init() {
 	register_clcmd( "drop", "cmdDropWeapon" );
 
 	load_config_file();
+	initWpnLevel();
 	init();
 }
 
@@ -133,45 +134,11 @@ public fw_Spawn_Pre(ent)
     return FMRES_IGNORED
 }
 
+
 public JoinTeam()
 {
 	auto_config();
 }
-
-public join_team()
-{    
-    new id = read_data(1)
-    static user_team[32]
-    
-    read_data(2, user_team, 31)    
-    
-    if(!is_user_connected(id))
-        return PLUGIN_CONTINUE    
-    
-    auto_config();
-    switch(user_team[0])
-    {
-        case 'C':  
-        {
-            // player join to ct's        
-        }
-            
-        case 'T': 
-        {
-            // player join to terrorist
-        }
-        
-        
-        case 'S':  
-        {
-            // player join to spectators
-        }
-        
-        
-    }
-    return PLUGIN_CONTINUE
-    
-} 
 
 public cmdJoinClass( id )
 {
@@ -206,41 +173,33 @@ auto_config()
 	if(!get_pcvar_num(cvar_auto_config))
 		return;
 
-	static players[MAX_PLAYERS] , iCountCt , iCountT;
-	get_players_ex(players, iCountT, GetPlayers_MatchTeam, "TERRORIST")
-	set_pcvar_num(cvar_lv_per_kill_t , (iCountT+1))
+	static players[MAX_PLAYERS];
+	new iCount;
+	get_players_ex(players, iCount, GetPlayers_MatchTeam, "TERRORIST")
+	set_pcvar_num(cvar_lv_per_kill_t , (iCount+1))
 
-	get_players_ex(players, iCountCt, GetPlayers_MatchTeam, "CT")
-	set_pcvar_num(cvar_lv_per_kill_ct , (iCountCt+1))
+	get_players_ex(players, iCount, GetPlayers_MatchTeam, "CT")
+	set_pcvar_num(cvar_lv_per_kill_ct , (iCount+1))
 	
-	console_print(0 , "%i , %i" , iCountT , iCountCt);
 	set_level_message();
 }
 
 public game_restart()
 {
 	auto_config()
-	
-	g_iTeamKillUntilNextLevel[TEAM_T] = get_pcvar_num(cvar_lv_per_kill_t);
-	g_iTeamKillUntilNextLevel[TEAM_CT] = get_pcvar_num(cvar_lv_per_kill_ct);
-	g_iTeamWpnLevel[TEAM_T] = 0;
-	g_iTeamWpnLevel[TEAM_CT] = 0;
-
-	g_iWinTeam = -1
-
 	server_cmd("sv_restart 1")
-
+	init();
 	set_level_message();
 }
 
 public init()
 {
-	g_iTeamKillUntilNextLevel[TEAM_T] = get_pcvar_num(cvar_lv_per_kill_t);
-	g_iTeamKillUntilNextLevel[TEAM_CT] = get_pcvar_num(cvar_lv_per_kill_ct);
+	g_iTeamCurrLevelKill[TEAM_T] = 0;
+	g_iTeamCurrLevelKill[TEAM_CT] = 0;
 	g_iTeamWpnLevel[TEAM_T] = 0;
 	g_iTeamWpnLevel[TEAM_CT] = 0;
-
-	initWpnLevel();
+	g_iWinTeam = -1
+	
 	set_level_message();
 	
 	return PLUGIN_HANDLED;
@@ -333,21 +292,18 @@ public get_team_wpn_msg(iTeam)
 
 public get_team_wpn_level_progress(iTeam)
 {
-	static iCurrKill , i;
-	if(iTeam == TEAM_T)	
-		iCurrKill = get_pcvar_num(cvar_lv_per_kill_t)
-	else 			
-		iCurrKill = get_pcvar_num(cvar_lv_per_kill_ct)
+	static iKillPerLv , i;
+	iKillPerLv = iTeam == TEAM_T ? get_pcvar_num(cvar_lv_per_kill_t) : get_pcvar_num(cvar_lv_per_kill_ct)
+
+	new szBuffer[16];
+	static iRemain; iRemain = iKillPerLv - g_iTeamCurrLevelKill[iTeam];
 	
-	new szBuffer[8];
-	static iRemain; iRemain = iCurrKill - g_iTeamKillUntilNextLevel[iTeam];
-	
-	for(i = 0 ; i < iRemain; i++)
+	for(i = 0 ; i < g_iTeamCurrLevelKill[iTeam]; i++)
 	{
 		strcat(szBuffer , "|" , charsmax(szBuffer));
 	}
 	
-	for(i = 0 ; i < g_iTeamKillUntilNextLevel[iTeam]; i++)
+	for(i = 0 ; i < iRemain; i++)
 	{
 		strcat(szBuffer , "-" , charsmax(szBuffer));
 	}
@@ -370,6 +326,7 @@ public client_disconnected(id)
 	remove_task(TASK_RESPAWN+id);
 	remove_task(TASK_REMOVE_PROTECTION+id);
 	remove_task(TASK_STRIP_GIVE+id);
+	auto_config();
 }
 
 
@@ -379,15 +336,8 @@ public client_disconnected(id)
 // it by entity. so we do this ridiculous thing in order to do so.
 public Do_Register_HamBot(id)
 {
-
 	RegisterHamFromEntity(Ham_Spawn,id,"ham_Player_Spawn_Post",1);
-	// RegisterHamFromEntity(Ham_Killed,id,"ham_player_killed_pre",0);
 	RegisterHamFromEntity(Ham_Killed,id,"ham_player_killed_post",1);
-	
-	
-	// bug fix for mid-round spawning, thanks to MeRcyLeZZ
-	// if(is_user_alive(id)) ham_player_spawn(id);
-	
 }
 
 public ham_player_killed_post(victim,killer,gib)
@@ -402,11 +352,11 @@ public ham_player_killed_post(victim,killer,gib)
 		
 		// T is 1 in CsTeam , so -1 to match the array.
 		iTeam--;
-		
-		g_iTeamKillUntilNextLevel[iTeam]--;
-		
-		if(g_iTeamKillUntilNextLevel[iTeam] <= 0)
-		{			
+		g_iTeamCurrLevelKill[iTeam]++;
+
+		static iLvUpKill; iLvUpKill = iTeam == TEAM_T ? get_pcvar_num(cvar_lv_per_kill_t) : get_pcvar_num(cvar_lv_per_kill_ct)
+		if(g_iTeamCurrLevelKill[iTeam] >= iLvUpKill)
+		{
 			// Knife kill fullfilled , game end
 			if(is_last_wpn_level(iTeam))
 			{
@@ -446,17 +396,8 @@ game_end()
 set_wpn_level(iTeam, iLevel)
 {
 	g_iTeamWpnLevel[iTeam] = iLevel;	
-
-	static iKillPerLv;
-	if(iTeam == TEAM_T)	
-		iKillPerLv = get_pcvar_num(cvar_lv_per_kill_t)
-	else 			
-		iKillPerLv = get_pcvar_num(cvar_lv_per_kill_ct)
-
-	g_iTeamKillUntilNextLevel[iTeam] = iKillPerLv	
-	
+	g_iTeamCurrLevelKill[iTeam] = 0;
 	level_up_team(iTeam);
-	
 	set_level_message();
 }
 
