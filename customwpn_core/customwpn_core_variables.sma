@@ -117,6 +117,8 @@ new g_ForwardResult
 new g_Forwards[TOTAL_FORWARDS]
 // ============= //
 
+#define MAX_WPN 32
+
 // --- The args  [id][arg] --- //
 new g_iImpulse[MAX_WPN]						// 7 digit unique impulse id
 new g_szWpnId[MAX_WPN][32]					// weapon_xxxxx

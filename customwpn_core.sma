@@ -10,7 +10,6 @@
 #include <string>
 #include <stripweapons>
 #include <customwpn_const>
-#include <wpn_core>
 #include <cs_ham_bots_api>
 #include <reapi>
 #include <json>
@@ -366,7 +365,7 @@ public CmdGiveWpn(playerId, wpnid)
 	else if(SECONDARY & (1<<g_iWpnCswId[wpnid]))
 		Drop_Secondary_Weapon(playerId)
 	else if(CSW_KNIFE == g_iWpnCswId[wpnid])
-		wpn_core_reset_player_knife(playerId)
+		reset_player_knife(playerId)
 	
 	console_print(0, "[WpnCore] giving player wpnId %i" , wpnid);
 	// Sets which player (bit) owns the modified gun
@@ -567,6 +566,19 @@ public reset_player_wpn(id)
 	}
 }
 
+reset_player_knife(id)
+{
+	for(new i = 0 ; i < MAX_WPN ; i++)
+	{
+		if(g_iWpnCswId[i] == CSW_KNIFE)
+		{
+			UnSet_BitVar(g_HadWpn[i], id);
+		}
+	}
+}
+
+
+
 public get_wpnId_by_wpnname(szWpnName[])
 {
 	for(new i = 0 ; i < g_iWpnCount ; i++)
@@ -728,22 +740,17 @@ stock fm_get_weapon_ent_owner(ent)
 // =============================================================
 public plugin_natives()
 {	
-	register_library("wpn_core")
-	register_native("wpn_core_get_wpn_count", "native_core_get_wpn_count")
-	register_native("wpn_core_give_wpn", "native_core_give_wpn")
-	register_native("wpn_core_get_random_wpnid", "native_core_get_random_wpnid")
-	register_native("wpn_core_get_wpn_of_type", "native_core_get_wpn_of_type")
-	register_native("wpn_core_get_wpn_display_name", "native_core_get_wpn_display_name")
-	register_native("wpn_core_get_wpn_display_name_2", "native_core_get_wpn_display_name_2")
-	register_native("wpn_core_get_wpn_cswId", "native_core_get_wpn_cswId")
-	register_native("wpn_core_remove_all_player_wpn", "native_core_remove_all_player_wpn")
-	register_native("wpn_core_reset_player_knife", "native_core_reset_player_knife")
-	register_native("wpn_core_get_owned_wpnId", "native_core_get_owned_wpnId")
-	register_native("wpn_core_is_weapon_wpn", "native_core_is_weapon_wpn")
-	register_native("wpn_core_get_wpn_of_tier", "native_core_get_wpn_of_tier")
-
-	register_native("wpn_core_get_wpn_knockback", "native_core_get_wpn_knockback")
-	register_native("wpn_core_get_wpn_z_subtype", "native_core_get_wpn_z_subtype")
+	register_library("customwpn_core_api")
+	register_native("api_core_get_wpn_count", "native_core_get_wpn_count")
+	register_native("api_core_give_wpn", "native_core_give_wpn")
+	register_native("api_core_get_random_wpnid", "native_core_get_random_wpnid")
+	register_native("api_core_get_wpn_of_type", "native_core_get_wpn_of_type")
+	register_native("api_core_get_wpn_display_name", "native_core_get_wpn_display_name")
+	register_native("api_core_get_wpn_cswId", "native_core_get_wpn_cswId")
+	register_native("api_core_remove_all_player_wpn", "native_core_remove_all_player_wpn")
+	register_native("api_core_reset_player_knife", "native_core_reset_player_knife")
+	register_native("api_core_get_owned_wpnId", "native_core_get_owned_wpnId")
+	register_native("api_core_is_weapon_wpn", "native_core_is_weapon_wpn")
 }
 
 
@@ -762,15 +769,8 @@ public native_core_get_wpn_count(plugin_id, num_params)
 public native_core_get_wpn_display_name(plugin_id, num_params)
 {
 	static wpnId; wpnId = get_param(1);
-	return g_szWpnDisplayName[wpnId];
-}
-
-public native_core_get_wpn_display_name_2(plugin_id, num_params)
-{
-	static wpnId; wpnId = get_param(1);
 	return set_string(2 , g_szWpnDisplayName[wpnId] , charsmax(g_szWpnDisplayName[]));
 }
-
 
 public native_core_give_wpn(plugin_id, num_params)
 {
@@ -816,33 +816,6 @@ public Array:native_core_get_wpn_of_type(plugin_id, num_params)
 	return array;
 }
 
-public Array:native_core_get_wpn_of_tier(plugin_id, num_params)
-{
-	new iTier = get_param(1);
-	new iWpnId;
-	new Array:array = ArrayCreate(1 , MAX_WPN);
-	
-	for(iWpnId = 0 ; iWpnId < MAX_WPN ; iWpnId++)
-	{
-		if(g_iWpnZTier[iWpnId] == iTier)
-			ArrayPushCell(array, iWpnId);
-	}
-	return array;
-}
-
-public native_core_get_wpn_z_subtype(plugin_id, num_params)
-{
-	new iWpnId = get_param(1);
-	return g_iWpnZSubType[iWpnId]
-}
-
-public native_core_get_wpn_contains_ammo_pack(plugin_id, num_params)
-{
-	new iWpnId;
-	new Array:array = ArrayCreate(1 , MAX_WPN);
-	return array;
-}
-
 public native_core_remove_all_player_wpn(plugin_id, num_params)
 {
 	new iPlayerId = get_param(1);
@@ -858,13 +831,7 @@ public native_core_remove_all_player_wpn(plugin_id, num_params)
 public native_core_reset_player_knife(plugin_id, num_params)
 {
 	new iPlayerId = get_param(1);
-	for(new i = 0 ; i < MAX_WPN ; i++)
-	{
-		if(g_iWpnCswId[i] == CSW_KNIFE)
-		{
-			UnSet_BitVar(g_HadWpn[i], iPlayerId);
-		}
-	}
+	reset_player_knife(iPlayerId);
 }
 
 public bool:native_core_is_weapon_wpn(plugin_id, num_params)
@@ -883,15 +850,4 @@ public native_core_get_owned_wpnId(plugin_id, num_params)
 	new cswId = get_param(2);
 
 	return Get_Owned_Wpn_By_CSW(cswId, iPlayerId);
-}
-
-public Float:native_core_get_wpn_knockback(plugin_id, num_params)
-{
-	static wpnId; wpnId = get_param(1);
-	if (wpnId > g_iWpnCount)
-	{
-		log_error(AMX_ERR_NATIVE, "Invalid WpnId (%d)", wpnId)
-		return -1.0;
-	}
-	return g_fWpnKnockback[wpnId];
 }
