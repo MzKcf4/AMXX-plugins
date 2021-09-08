@@ -329,7 +329,10 @@ public CmdGiveWpn(playerId, wpnid)
 	else if(SECONDARY & (1<<g_iWpnCswId[wpnid]))
 		Drop_Secondary_Weapon(playerId)
 	else if(CSW_KNIFE == g_iWpnCswId[wpnid])
+	{
 		reset_player_knife(playerId)
+		ham_strip_user_weapon(playerId , CSW_KNIFE)
+	}
 	
 	console_print(0, "[WpnCore] giving player wpnId %i" , wpnid);
 	// Sets which player (bit) owns the modified gun
