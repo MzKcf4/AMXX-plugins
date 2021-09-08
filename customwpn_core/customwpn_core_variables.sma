@@ -162,7 +162,7 @@ new Float:g_fWpnKnockback[MAX_WPN] = {-1.0 , ...}		// ZombieMod: Knockback for z
 new Float:g_fWpnDmgMultiplierZ[MAX_WPN] = {-1.0 , ...}	// ZombieMod: Dmg multiplier when zombie mode is active
 new g_iWpnZTier[MAX_WPN] = {-1 , ...}					// ZombieMod: "Tier" for Zombie mode's weapon system
 new g_iWpnZSubType[MAX_WPN] = {-1 , ...}				// ZombieMod: SubType of Secondary weapon 
-new bool:g_bIsZombieMode = false						// Override some of methods if zombie mode is active
+						// Override some of methods if zombie mode is active
 
 enum _:ZSubType
 {
@@ -175,7 +175,7 @@ enum _:ZSubType
 new g_iWpnCount = 0;	// How many wpn registered?
 
 // ============
-new g_HadWpn[MAX_WPN]			// A 32 bit value, each bit correspond to a playerId , 1 = own weapon , 0 = not
+new g_HadWpn[MAX_WPN]			// An array of a 32 bit value, each bit correspond to a playerId , 1 = own weapon , 0 = not
 new g_WpnState[MAX_PLAYERS + 1][MAX_WPN]		// The weapon state of each player's Wpn : "[1][3] = 1 " means : player id 1's  wpn 4  has usp slicened.
 new Float:g_fPushAngle[MAX_PLAYERS + 1][3];	// The current recoil angle of the weapon that player is holding
 new g_iPlayerWpnClip[33];						// The clip info used for reloading of each player's wpn

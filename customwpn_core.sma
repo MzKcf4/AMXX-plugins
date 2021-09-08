@@ -26,7 +26,6 @@
 #define AUTHOR "MzKc"
 
 // ToDo: 
-// fw_TraceHull move to separate plugin
 // read pcvar from config
 
 new pcvar_wpnFree;
@@ -72,9 +71,6 @@ public plugin_init() {
 	// Custom dmg for players
 	RegisterHam(Ham_TraceAttack, "player", "fw_TraceAttack_Player")
 	RegisterHamBots(Ham_TraceAttack, "fw_TraceAttack_Player")
-
-	// Extended knife dmg
-	register_forward(FM_TraceHull, "fw_TraceHull")
 
 	for(new i = 0 ; i < g_iWpnCount ; i++)
 	{
@@ -200,32 +196,6 @@ public fw_EmitSound(id, channel, sample[], Float:volume, Float:attn, flag, pitch
 // ========================== Knife attack radius related ===================================
 
 // ToDo: Should move this to a separate plugin
-// This is fired when slashing knife
-public fw_TraceHull(Float:vector_start[3], Float:vector_end[3], ignored_monster, hull, id, handle)
-{
-	if(!is_alive(id))
-		return FMRES_IGNORED	
-	// if(get_player_weapon(id) != CSW_HORSEAXE || !Get_BitVar(g_Had_HorseAxe, id))
-	if(!g_bIsZombieMode || get_player_weapon(id) != CSW_KNIFE || is_user_bot(id))
-		return FMRES_IGNORED
-	// console_print(0 , "Tracing hull");
-	static Float:vecStart[3], Float:vecEnd[3], Float:v_angle[3], Float:v_forward[3], Float:view_ofs[3], Float:fOrigin[3]
-	
-	pev(id, pev_origin, fOrigin)
-	pev(id, pev_view_ofs, view_ofs)
-	xs_vec_add(fOrigin, view_ofs, vecStart)
-	pev(id, pev_v_angle, v_angle)
-	
-	engfunc(EngFunc_MakeVectors, v_angle)
-	get_global_vector(GL_v_forward, v_forward)
-
-	xs_vec_mul_scalar(v_forward, KNIFE_MIN_DIST_ZOMBIE_MOD , v_forward)
-	xs_vec_add(vecStart, v_forward, vecEnd)
-	
-	engfunc(EngFunc_TraceHull, vecStart, vecEnd, ignored_monster, hull, id, handle)
-	
-	return FMRES_SUPERCEDE
-}
 
 // ===============================
 

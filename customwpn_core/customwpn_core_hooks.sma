@@ -1,13 +1,17 @@
+/*
 #include "special_wpn/starchasersr.sma"
 #include "special_wpn/dragonsword.sma"
-#include "special_wpn/balisong.sma"
 #include "special_wpn/skull9.sma"
 #include "special_wpn/crow9.sma"
 #include "special_wpn/runeblade.sma"
 #include "special_wpn/balrog9.sma"
+*/
+#include "special_wpn/balisong.sma"
+
 
 precache_special()
-{
+{	
+	/*
 	for(new i = 0 ; i < g_iWpnCount ; i++)
 	{
 		if(g_iWpnSpecialId[i] < 0 )
@@ -17,7 +21,9 @@ precache_special()
 		else if (g_iWpnSpecialId[i] == SPECIAL_BALROG9)
 			precache_Balrog9();
 	}
+	*/
 }
+
 
 
 // ============ Weapon Attack =================== //
@@ -148,7 +154,6 @@ public fw_TraceAttack_Player(Victim, Attacker, Float:Damage, Float:Direction[3],
 {
 
 	static name[32];
-	// ClearMultiDamage();
 	get_user_name(Victim, name, charsmax(name));
 	// console_print(0 , "[TraceAttack_Player] V:%s , A:%i , Damage %f" , name , Attacker , Damage);
 	if(!is_connected(Attacker))
@@ -160,13 +165,15 @@ public fw_TraceAttack_Player(Victim, Attacker, Float:Damage, Float:Direction[3],
 		return HAM_IGNORED
 	
 	static Float:dmg; dmg = Damage;
+	// Note for Zombie mode : can override the fWpnDmgMultiplier in loader so that it will use Z mode multipler
+	/*
 	if(g_bIsZombieMode && g_fWpnDmgMultiplierZ[ownedWpnId] > 0)
 	{
 		dmg = Damage * g_fWpnDmgMultiplierZ[ownedWpnId];
 		SetHamParamFloat(3, dmg)
 		return HAM_HANDLED
 	}
-	
+	*/
 	
 	if(g_fWpnDmgMultiplier[ownedWpnId] <= -1.0)
 		return HAM_IGNORED
@@ -497,8 +504,10 @@ public HamF_Item_PostFrame(ent)
 		// fInReload = 0
 	}
 
+	/*
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_STARCHASERSR)
 		Item_PostFrame_StarchaserSR(id , ent);
+	*/
 
 	return HAM_IGNORED
 }
@@ -512,6 +521,7 @@ public HamF_Knife_PostFrame(ent)
 	if( ownWpnId == NO_WPN_OWNED)
 		return HAM_IGNORED;
 
+	/*
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_CROW9){
 		return ItemPostFrame_Crow9(playerId , ent);
 	}
@@ -521,6 +531,7 @@ public HamF_Knife_PostFrame(ent)
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALROG9){
 		return ItemPostFrame_Balrog9(playerId , ent);
 	}
+	*/
 
 	return HAM_IGNORED;
 	/*
@@ -553,7 +564,7 @@ public HamF_Knife_PrimaryAttack_Pre(ent)
 	if(!is_user_alive(playerId))
 		return HAM_IGNORED
 
-
+	/*
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_DRAGONSWORD){
 		PrimaryAttack_Pre_DragonSword(playerId , ent);
 		return HAM_SUPERCEDE;
@@ -579,7 +590,7 @@ public HamF_Knife_PrimaryAttack_Pre(ent)
 		PrimaryAttack_Pre_Balisong(playerId , ent);
 		return HAM_IGNORED;
 	}
-	
+	*/
 	return HAM_IGNORED;
 }
 
@@ -594,7 +605,7 @@ public HamF_Knife_SecondaryAttack_Pre(ent)
 	if(!is_user_alive(playerId))
 		return HAM_IGNORED
 	
-
+	/*
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_DRAGONSWORD){
 		SecondaryAttack_Pre_DragonSword(playerId , ent);
 		return HAM_SUPERCEDE;
@@ -615,7 +626,7 @@ public HamF_Knife_SecondaryAttack_Pre(ent)
 		SecondaryAttack_Pre_Balrog9(playerId , ent);
 		return HAM_SUPERCEDE;
 	}
-
+	*/
 
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALISONG){
 		SecondaryAttack_Pre_Balisong(playerId , ent);
@@ -651,6 +662,7 @@ public HamF_Knife_Holster_Post(ent)
 	if( ownWpnId == NO_WPN_OWNED)
 		return HAM_IGNORED;
 
+	/*
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_DRAGONSWORD){
 		Holster_Post_DragonSword(playerId , ent);
 	} 
@@ -666,5 +678,6 @@ public HamF_Knife_Holster_Post(ent)
 	else if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALROG9){
 		Holster_Post_Balrog9(playerId , ent);
 	}
+	*/
 	return HAM_IGNORED;
 }

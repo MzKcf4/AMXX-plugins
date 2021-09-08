@@ -57,6 +57,8 @@ public plugin_init()
 	register_logevent("Event_RoundStart", 2, "1=Round_Start") 
 	register_message(get_user_msgid("ClCorpse"),"message_clcorpse");
 	register_forward(FM_EmitSound, "fw_EmitSound");
+	// Extended knife slash distance
+	register_forward(FM_TraceHull, "fw_TraceHull")
 	// ToDo:
 	// https://forums.alliedmods.net/showthread.php?t=89863
 
@@ -406,6 +408,33 @@ public Ham_TakeDamage_Post(victim, inflictor, attacker, Float:damage, damage_typ
 
 	Ham_TakeDamage_Post_Health_Regen(victim /*, inflictor, attacker, damage, damage_type */)
 	Ham_TakeDamage_Post_Human_Trait(victim, inflictor, attacker,damage, damage_type)
+}
+
+// This is fired when slashing knife
+public fw_TraceHull(Float:vector_start[3], Float:vector_end[3], ignored_monster, hull, id, handle)
+{
+	if(!is_user_alive(id))
+		return FMRES_IGNORED	
+
+	if(get_user_weapon(id) != CSW_KNIFE || is_user_bot(id))
+		return FMRES_IGNORED
+
+	static Float:vecStart[3], Float:vecEnd[3], Float:v_angle[3], Float:v_forward[3], Float:view_ofs[3], Float:fOrigin[3]
+	
+	pev(id, pev_origin, fOrigin)
+	pev(id, pev_view_ofs, view_ofs)
+	xs_vec_add(fOrigin, view_ofs, vecStart)
+	pev(id, pev_v_angle, v_angle)
+	
+	engfunc(EngFunc_MakeVectors, v_angle)
+	get_global_vector(GL_v_forward, v_forward)
+
+	xs_vec_mul_scalar(v_forward, KNIFE_MIN_DIST_ZOMBIE_MOD , v_forward)
+	xs_vec_add(vecStart, v_forward, vecEnd)
+	
+	engfunc(EngFunc_TraceHull, vecStart, vecEnd, ignored_monster, hull, id, handle)
+	
+	return FMRES_SUPERCEDE
 }
 
 // ================== Spawn related ============================== //
