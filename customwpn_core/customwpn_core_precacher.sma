@@ -40,10 +40,10 @@ load_chosen_resource(JSON:jLoadedWpnObj)
 		entryJsonObj = json_array_get_value(jLoadedWpnObj , i)
 		// ------- Basic Info ------- //
 		g_iImpulse[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_IMPULSE_ID);
-		/* g_szWpnId[g_iWpnCount] = */ json_object_get_string(entryJsonObj, JSON_WPN_ID, g_szWpnId[g_iWpnCount], charsmax(g_szWpnId[]));
-		/* g_szWpnIdOld[g_iWpnCount] = */json_object_get_string(entryJsonObj, JSON_CSW_WPN_ID, g_szWpnIdOld[g_iWpnCount], charsmax(g_szWpnIdOld[]));
+		json_object_get_string(entryJsonObj, JSON_WPN_ID, g_szWpnId[g_iWpnCount], charsmax(g_szWpnId[]));
+		json_object_get_string(entryJsonObj, JSON_CSW_WPN_ID, g_szWpnIdOld[g_iWpnCount], charsmax(g_szWpnIdOld[]));
 		g_iWpnCswId[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_CSW_ID);
-		/* g_szWpnDisplayName[g_iWpnCount] = */json_object_get_string(entryJsonObj, JSON_DISPLAY_NAME, g_szWpnDisplayName[g_iWpnCount], charsmax(g_szWpnDisplayName[]));
+		json_object_get_string(entryJsonObj, JSON_DISPLAY_NAME, g_szWpnDisplayName[g_iWpnCount], charsmax(g_szWpnDisplayName[]));
 		g_iWpnSpecialId[g_iWpnCount]  = json_object_get_number(entryJsonObj, JSON_SPECIAL_ID);
 
 		// ------- Attributes ------- //
@@ -84,8 +84,8 @@ load_chosen_resource(JSON:jLoadedWpnObj)
 
 		// ------------- Shoot Sound ------------------ //
 		g_bOverride[g_iWpnCount] =  json_object_get_bool(entryJsonObj, JSON_OVERRIDE_SHOOT_SOUND);
-		/* g_szWpnShootSound[g_iWpnCount] = */ json_object_get_string(entryJsonObj, JSON_SHOOT_SOUND_PATH, g_szWpnShootSound[g_iWpnCount], charsmax(g_szWpnShootSound[]));
-		/* g_szWpnShootSoundSilenced[g_iWpnCount] = */ json_object_get_string(entryJsonObj, JSON_SHOOT_SOUND_SLICENCED_PATH, g_szWpnShootSoundSilenced[g_iWpnCount], charsmax(g_szWpnShootSoundSilenced[]));
+		json_object_get_string(entryJsonObj, JSON_SHOOT_SOUND_PATH, g_szWpnShootSound[g_iWpnCount], charsmax(g_szWpnShootSound[]));
+		json_object_get_string(entryJsonObj, JSON_SHOOT_SOUND_SLICENCED_PATH, g_szWpnShootSoundSilenced[g_iWpnCount], charsmax(g_szWpnShootSoundSilenced[]));
 
 		if(g_bOverride[g_iWpnCount])
 			formatex(strBuffer, charsmax(strBuffer) , "%s%s%s", SC_PREFIX , g_CSW_SC[g_iWpnCswId[g_iWpnCount]], SC_EXT);

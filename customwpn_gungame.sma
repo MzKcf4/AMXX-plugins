@@ -26,11 +26,12 @@
 #define WBOX "models/w_weaponbox.mdl"
 #define BOMB "models/w_backpack.mdl"
 #define SHLD "models/w_shield.mdl"
+
+new const CSW_MAXBPAMMO[33] = {-2,52,0,90,1,32,1,100,90,1,120,100,100,90,90,90,100,120,30,120,200,32,90,120,90,2,35,90,90,0,100,-1,-1}
+
 new g_entid[MAX_PLAYERS + 1]
 new g_maxents
-
 new g_iWinTeam = -1;
-
 new g_HamBot;
 
 

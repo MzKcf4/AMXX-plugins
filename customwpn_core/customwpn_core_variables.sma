@@ -28,11 +28,6 @@ const SECONDARY = ((1<<CSW_P228) | (1<<CSW_ELITE) | (1<<CSW_FIVESEVEN) | (1<<CSW
 
 const WPN_WITH_STATE = ((1<<CSW_M4A1) | (1<<CSW_USP))
 
-new const g_CSW_ENT_NAME[][] = {"weapon_thighpack", "weapon_p228", "weapon_shield", "weapon_scout", "weapon_hegrenade", "weapon_xm1014", "weapon_c4",
-"weapon_mac10", "weapon_aug", "weapon_smokegrenade", "weapon_elite", "weapon_fiveseven", "weapon_ump45", "weapon_sg550", "weapon_galil", "weapon_famas", "weapon_usp",
-"weapon_glock18", "weapon_awp", "weapon_mp5navy", "weapon_m249", "weapon_m3", "weapon_m4a1", "weapon_tmp", "weapon_g3sg1", "weapon_flashbang", "weapon_deagle",
-"weapon_sg552", "weapon_ak47", "weapon_knife", "weapon_p90", "w_backpack"};
-
 // ================================== Models & Resources ============================= //
 new const SC_PREFIX[] = "events/";
 new const SC_EXT[] = ".sc";
@@ -56,7 +51,7 @@ new const MDL_DEFAULT[][] = {"thighpack", "p228", "shield", "scout", "hegrenade"
 "sg552", "ak47", "knife", "p90", "backpack"};
 // =================================================================================== // 
 
-new const g_MAX_BPAMMO[] = {-1, 52, -1, 90, 1, 32, 1, 100, 90, 1, 120, 100, 100, 90, 90, 90, 100, 120, 30, 120, 200, 32, 90, 120, 90, 2, 35, 90, 90, -1, 100};
+
 new const g_ITEM_IN_SLOT[] = {-1, 3, -1, 9,1,12,3,13,14,3,5,6,15,16,17,18,4,2,2,7,4,5,6,11,3,2,1,10,1,1,8}
 new const g_SLOT[] = {-1 , 1 , -1 , 0 , 3 , 0 , 4 , 0 , 0 , 3 , 1 , 1 , 0 , 0 , 0 , 0 ,1 , 1 , 0 , 0 ,0 , 0 , 0 , 0 ,0 , 3 , 1 , 0 ,0 , 2 , 0}
 
@@ -104,18 +99,6 @@ new const g_szWbox_model[] = "models/w_weaponbox.mdl"
 new const g_szWbox_model_prefix[] = "models/w_"
 
 new g_SmokePuff_SprId;
-
-// =============== //
-// Custom Forwards
-enum _:TOTAL_FORWARDS
-{
-	FW_REGISTER_WPN_POST = 0,
-	FW_GIVE_WPN,
-	FW_DROP_WPN
-}
-new g_ForwardResult
-new g_Forwards[TOTAL_FORWARDS]
-// ============= //
 
 #define MAX_WPN 32
 

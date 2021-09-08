@@ -1,7 +1,7 @@
-#if defined _wpn_const_included
+#if defined _customwpn_const_included
   #endinput
 #endif
-#define _wpn_const_included
+#define _customwpn_const_included
 
 #pragma library wpn_const
 
@@ -21,40 +21,3 @@
 #define GUN_TYPE ((1<<CSW_M4A1)|(1<<CSW_AK47)|(1<<CSW_GALI)|(1<<CSW_FAMAS)|(1<<CSW_AUG)|(1<<CSW_SG550)|(1<<CSW_SG552)|(1<<CSW_G3SG1)|(1<<CSW_AWP)|(1<<CSW_MP5NAVY)|(1<<CSW_TMP)|(1<<CSW_MAC10)|(1<<CSW_UMP45)|(1<<CSW_P90)|(1<<CSW_SCOUT)|(1<<CSW_M3)|(1<<CSW_XM1014)|(1<<CSW_P90)|(1<<CSW_M249)| (1<<CSW_P228) | (1<<CSW_ELITE) | (1<<CSW_FIVESEVEN) | (1<<CSW_USP) | (1<<CSW_GLOCK18) | (1<<CSW_DEAGLE))
 
 #define CSW_MASK 1000000			// iImpulse minus this value for real CSWID
-
-new const CSW_MAXBPAMMO[33] =
-{
-    -2,
-    52,
-    0,
-    90,
-    1,
-    32,
-    1,
-    100,
-    90,
-    1,
-    120,
-    100,
-    100,
-    90,
-    90,
-    90,
-    100,
-    120,
-    30,
-    120,
-    200,
-    32,
-    90,
-    120,
-    90,
-    2,
-    35,
-    90,
-    90,
-    0,
-    100,
-    -1,
-    -1
-}
