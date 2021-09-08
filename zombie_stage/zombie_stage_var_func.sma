@@ -86,6 +86,12 @@ new Float:g_fPlayerZombieKnockback[MAX_PLAYERS + 1]	// Individual knockback mult
 // ========================
 new bool:g_bProgressEnd;
 
+// ============ Weapon param override for Zombie mode ================== //
+new Float:g_fWpnKnockback[MAX_WPN] = {-1.0 , ...}		// ZombieMod: Knockback for zombie mode
+new Float:g_fWpnDmgMultiplierZ[MAX_WPN] = {-1.0 , ...}	// ZombieMod: Dmg multiplier when zombie mode is active
+new g_iWpnZTier[MAX_WPN] = {-1 , ...}					// ZombieMod: "Tier" for Zombie mode's weapon system
+new g_iWpnZSubType[MAX_WPN] = {-1 , ...}				// ZombieMod: SubType of Secondary weapon 
+
 new const HUMAN_WIN_SOUND[] = "sound/zombie_plague/win_human.wav"
 new const ZOMBIE_WIN_SOUND[] = "sound/zombie_plague/win_zombie.wav"
 new const ZOMBIE_EVOLVE_SOUND[] = "sound/zombie_plague/the_horror2.wav"

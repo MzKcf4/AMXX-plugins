@@ -157,19 +157,7 @@ new g_szKnifeHitSound[MAX_WPN][64]
 new g_szKnifeHitWallSound[MAX_WPN][64]
 new g_szKnifeSlashSound[MAX_WPN][64]
 new g_szKnifeStabSound[MAX_WPN][64]
-// ============ Zombie mode cvar ================== //
-new Float:g_fWpnKnockback[MAX_WPN] = {-1.0 , ...}		// ZombieMod: Knockback for zombie mode
-new Float:g_fWpnDmgMultiplierZ[MAX_WPN] = {-1.0 , ...}	// ZombieMod: Dmg multiplier when zombie mode is active
-new g_iWpnZTier[MAX_WPN] = {-1 , ...}					// ZombieMod: "Tier" for Zombie mode's weapon system
-new g_iWpnZSubType[MAX_WPN] = {-1 , ...}				// ZombieMod: SubType of Secondary weapon 
-						// Override some of methods if zombie mode is active
 
-enum _:ZSubType
-{
-	ZSubType_NONE = -1,
-	ZSubType_SUP,
-	ZSubType_DMG
-}
 
 // Rotation related
 new g_iWpnCount = 0;	// How many wpn registered?

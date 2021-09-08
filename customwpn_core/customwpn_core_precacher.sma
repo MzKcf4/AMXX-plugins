@@ -102,10 +102,10 @@ load_chosen_resource(JSON:jLoadedWpnObj)
 		g_iWpnDrawSeqId[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_DRAW_SEQ);
 
 		// ----------- Zombie related param ----------- //
-		g_fWpnDmgMultiplierZ[g_iWpnCount] = json_object_get_real(entryJsonObj, JSON_Z_DMG_MULTIPLIER);
-		g_fWpnKnockback[g_iWpnCount] = json_object_get_real(entryJsonObj, JSON_Z_KNOCKBACK);
-		g_iWpnZTier[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_Z_TIER);
-		g_iWpnZSubType[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_Z_SUBTYPE);
+		// g_fWpnDmgMultiplierZ[g_iWpnCount] = json_object_get_real(entryJsonObj, JSON_Z_DMG_MULTIPLIER);
+		// g_fWpnKnockback[g_iWpnCount] = json_object_get_real(entryJsonObj, JSON_Z_KNOCKBACK);
+		// g_iWpnZTier[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_Z_TIER);
+		// g_iWpnZSubType[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_Z_SUBTYPE);
 
 		if(g_iWpnCswId[g_iWpnCount] == CSW_KNIFE)
 			load_chosen_resource_knife(g_iImpulse[g_iWpnCount] , g_iWpnCount);

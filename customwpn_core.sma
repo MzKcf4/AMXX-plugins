@@ -193,12 +193,6 @@ public fw_EmitSound(id, channel, sample[], Float:volume, Float:attn, flag, pitch
 }
 
 
-// ========================== Knife attack radius related ===================================
-
-// ToDo: Should move this to a separate plugin
-
-// ===============================
-
 public CmdSelectWpn(playerId)
 {
 	
