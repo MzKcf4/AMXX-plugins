@@ -70,31 +70,39 @@ public plugin_end()
 
 read_count_from_setting()
 {
+	// Ref: CrazY. https://forums.alliedmods.net/showthread.php?t=315031
 	new const SETTING_FILENAME[] = "customwpn_settings";
 
-	if (!ini_read_int(SETTING_FILENAME, "LOADER_COUNT", "KNIFE", g_iKnifeLoadCount))
-		ini_write_int(SETTING_FILENAME, "LOADER_COUNT", "KNIFE", g_iKnifeLoadCount)
+	new szActiveProfile[64];
+	if(!ini_read_string(SETTING_FILENAME, "LOADER_ACTIVE_PROFILE", "PROFILE", szActiveProfile, charsmax(szActiveProfile)))
+	{
+		szActiveProfile = "DEFAULT";
+		ini_write_string(SETTING_FILENAME, "LOADER_ACTIVE_PROFILE" , "PROFILE" , szActiveProfile)
+	}
 
-	if (!ini_read_int(SETTING_FILENAME, "LOADER_COUNT", "PISTOL", g_iPistolLoadCount))
-		ini_write_int(SETTING_FILENAME, "LOADER_COUNT", "PISTOL", g_iPistolLoadCount)
+	if (!ini_read_int(SETTING_FILENAME, szActiveProfile, "KNIFE", g_iKnifeLoadCount))
+		ini_write_int(SETTING_FILENAME, szActiveProfile, "KNIFE", g_iKnifeLoadCount)
 
-	if (!ini_read_int(SETTING_FILENAME, "LOADER_COUNT", "SHOTGUN", g_iShotgunLoadCount))
-		ini_write_int(SETTING_FILENAME, "LOADER_COUNT", "SHOTGUN", g_iShotgunLoadCount)
+	if (!ini_read_int(SETTING_FILENAME, szActiveProfile, "PISTOL", g_iPistolLoadCount))
+		ini_write_int(SETTING_FILENAME, szActiveProfile, "PISTOL", g_iPistolLoadCount)
 
-	if (!ini_read_int(SETTING_FILENAME, "LOADER_COUNT", "SMG", g_iSmgLoadCount))
-		ini_write_int(SETTING_FILENAME, "LOADER_COUNT", "SMG", g_iSmgLoadCount)
+	if (!ini_read_int(SETTING_FILENAME, szActiveProfile, "SHOTGUN", g_iShotgunLoadCount))
+		ini_write_int(SETTING_FILENAME, szActiveProfile, "SHOTGUN", g_iShotgunLoadCount)
 
-	if (!ini_read_int(SETTING_FILENAME, "LOADER_COUNT", "RIFLE", g_iRifleLoadCount))
-		ini_write_int(SETTING_FILENAME, "LOADER_COUNT", "RIFLE", g_iRifleLoadCount)
+	if (!ini_read_int(SETTING_FILENAME, szActiveProfile, "SMG", g_iSmgLoadCount))
+		ini_write_int(SETTING_FILENAME, szActiveProfile, "SMG", g_iSmgLoadCount)
 
-	if (!ini_read_int(SETTING_FILENAME, "LOADER_COUNT", "BOLT_SNIPER", g_iBoltSniperLoadCount))
-		ini_write_int(SETTING_FILENAME, "LOADER_COUNT", "BOLT_SNIPER", g_iBoltSniperLoadCount)
+	if (!ini_read_int(SETTING_FILENAME, szActiveProfile, "RIFLE", g_iRifleLoadCount))
+		ini_write_int(SETTING_FILENAME, szActiveProfile, "RIFLE", g_iRifleLoadCount)
 
-	if (!ini_read_int(SETTING_FILENAME, "LOADER_COUNT", "AUTO_SNIPER", g_iAutoSniperLoadCount))
-		ini_write_int(SETTING_FILENAME, "LOADER_COUNT", "AUTO_SNIPER", g_iAutoSniperLoadCount)
+	if (!ini_read_int(SETTING_FILENAME, szActiveProfile, "BOLT_SNIPER", g_iBoltSniperLoadCount))
+		ini_write_int(SETTING_FILENAME, szActiveProfile, "BOLT_SNIPER", g_iBoltSniperLoadCount)
 
-	if (!ini_read_int(SETTING_FILENAME, "LOADER_COUNT", "MG", g_iMgLoadCount))
-		ini_write_int(SETTING_FILENAME, "LOADER_COUNT", "MG", g_iMgLoadCount)
+	if (!ini_read_int(SETTING_FILENAME, szActiveProfile, "AUTO_SNIPER", g_iAutoSniperLoadCount))
+		ini_write_int(SETTING_FILENAME, szActiveProfile, "AUTO_SNIPER", g_iAutoSniperLoadCount)
+
+	if (!ini_read_int(SETTING_FILENAME, szActiveProfile, "MG", g_iMgLoadCount))
+		ini_write_int(SETTING_FILENAME, szActiveProfile, "MG", g_iMgLoadCount)
 }
 
 
