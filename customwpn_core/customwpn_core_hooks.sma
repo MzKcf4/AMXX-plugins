@@ -1,18 +1,11 @@
-// #define _ENABLE_SPECIAL_WPN
 #if defined _ENABLE_SPECIAL_WPN
-#include "special_wpn/starchasersr.sma"
-#include "special_wpn/dragonsword.sma"
-#include "special_wpn/skull9.sma"
-#include "special_wpn/crow9.sma"
-#include "special_wpn/runeblade.sma"
-#include "special_wpn/balrog9.sma"
-#include "special_wpn/balisong.sma"
+#include "customwpn_core/customwpn_core_hooks_special.sma"
 #endif
-
 
 precache_special()
 {	
-	/*
+	#if defined _ENABLE_SPECIAL_WPN
+	
 	for(new i = 0 ; i < g_iWpnCount ; i++)
 	{
 		if(g_iWpnSpecialId[i] < 0 )
@@ -22,9 +15,9 @@ precache_special()
 		else if (g_iWpnSpecialId[i] == SPECIAL_BALROG9)
 			precache_Balrog9();
 	}
-	*/
+	
+	#endif
 }
-
 
 
 // ============ Weapon Attack =================== //
@@ -505,10 +498,9 @@ public HamF_Item_PostFrame(ent)
 		// fInReload = 0
 	}
 
-	/*
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_STARCHASERSR)
-		Item_PostFrame_StarchaserSR(id , ent);
-	*/
+	#if defined _ENABLE_SPECIAL_WPN
+	HamF_Item_PostFrame_Special(ownWpnId , id , ent)
+	#endif
 
 	return HAM_IGNORED
 }
@@ -517,45 +509,22 @@ public HamF_Item_PostFrame(ent)
 // ================================== Knife =====================================
 public HamF_Knife_PostFrame(ent)
 {
+	#if defined _ENABLE_SPECIAL_WPN
 	static playerId; playerId = pev(ent, pev_owner)
 	static ownWpnId; ownWpnId = Get_Owned_Wpn_By_CSW(CSW_KNIFE , playerId);
 	if( ownWpnId == NO_WPN_OWNED)
 		return HAM_IGNORED;
 
-	/*
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_CROW9){
-		return ItemPostFrame_Crow9(playerId , ent);
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_RUNEBLADE){
-		return ItemPostFrame_Runeblade(playerId , ent);
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALROG9){
-		return ItemPostFrame_Balrog9(playerId , ent);
-	}
-	*/
-
+	return HamF_Knife_PostFrame_Special(ownWpnId , playerId , ent)
+	#endif
+	
 	return HAM_IGNORED;
-	/*
-	static id; id = pev(ent, pev_owner)
-	if( !is_user_alive(id))
-		return HAM_IGNORED
-
-	static cswId; cswId = get_player_weapon(id);
-	static ownWpnId; ownWpnId = Get_Owned_Wpn_By_CSW(cswId , id);
-
-	if( ownWpnId == NO_WPN_OWNED)
-		return HAM_IGNORED;
-
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_STARCHASERSR)
-		Item_PostFrame_StarchaserSR(id , ent);
-
-	return HAM_IGNORED
-	*/
 }
 
 
 public HamF_Knife_PrimaryAttack_Pre(ent)
 {
+	#if defined _ENABLE_SPECIAL_WPN
 	static playerId; playerId = pev(ent, pev_owner)
 	static ownWpnId; ownWpnId = Get_Owned_Wpn_By_CSW(CSW_KNIFE , playerId);
 
@@ -565,38 +534,16 @@ public HamF_Knife_PrimaryAttack_Pre(ent)
 	if(!is_user_alive(playerId))
 		return HAM_IGNORED
 
-	/*
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_DRAGONSWORD){
-		PrimaryAttack_Pre_DragonSword(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_SKULL9){
-		PrimaryAttack_Pre_Skull9(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_CROW9){
-		PrimaryAttack_Pre_Crow9(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_RUNEBLADE){
-		PrimaryAttack_Pre_Runeblade(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALROG9){
-		PrimaryAttack_Pre_Balrog9(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
+	return HamF_Knife_PrimaryAttack_Pre_Special(ownWpnId , playerId , ent)
+	#endif
 
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALISONG){
-		PrimaryAttack_Pre_Balisong(playerId , ent);
-		return HAM_IGNORED;
-	}
-	*/
 	return HAM_IGNORED;
 }
 
 public HamF_Knife_SecondaryAttack_Pre(ent)
 {
+	#if defined _ENABLE_SPECIAL_WPN
+
 	static playerId; playerId = pev(ent, pev_owner)
 	static ownWpnId; ownWpnId = Get_Owned_Wpn_By_CSW(CSW_KNIFE , playerId);
 
@@ -605,41 +552,17 @@ public HamF_Knife_SecondaryAttack_Pre(ent)
 
 	if(!is_user_alive(playerId))
 		return HAM_IGNORED
-	
-	/*
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_DRAGONSWORD){
-		SecondaryAttack_Pre_DragonSword(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_SKULL9){
-		SecondaryAttack_Pre_Skull9(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_CROW9){
-		SecondaryAttack_Pre_Crow9(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_RUNEBLADE){
-		SecondaryAttack_Pre_Runeblade(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALROG9){
-		SecondaryAttack_Pre_Balrog9(playerId , ent);
-		return HAM_SUPERCEDE;
-	}
-	
 
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALISONG){
-		SecondaryAttack_Pre_Balisong(playerId , ent);
-	
-		return HAM_IGNORED;
-	}
-	*/
+	return HamF_Knife_SecondaryAttack_Pre_Special(ownWpnId , playerId , ent)
+
+	#endif
+
 	return HAM_IGNORED;
 }
 
 public HamF_Knife_SecondaryAttack_Post(ent)
 {
+	#if defined _ENABLE_SPECIAL_WPN
 	static playerId; playerId = pev(ent, pev_owner)
 	static ownWpnId; ownWpnId = Get_Owned_Wpn_By_CSW(CSW_KNIFE , playerId);
 
@@ -648,41 +571,24 @@ public HamF_Knife_SecondaryAttack_Post(ent)
 
 	if(!is_user_alive(playerId))
 		return HAM_IGNORED
-	/*
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALISONG){
-		SecondaryAttack_Post_Balisong(playerId , ent);
-	
-		return HAM_IGNORED;
-	}
-	*/
+
+	HamF_Knife_SecondaryAttack_Post_Special(ownWpnId , playerId , ent)
+	#endif
+
 	return HAM_IGNORED;
 	
 }
 
 public HamF_Knife_Holster_Post(ent)
 {
+	#if defined _ENABLE_SPECIAL_WPN
 	static playerId; playerId = pev(ent, pev_owner)
 	static ownWpnId; ownWpnId = Get_Owned_Wpn_By_CSW(CSW_KNIFE , playerId);
 
 	if( ownWpnId == NO_WPN_OWNED)
 		return HAM_IGNORED;
 
-	/*
-	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_DRAGONSWORD){
-		Holster_Post_DragonSword(playerId , ent);
-	} 
-	else if(g_iWpnSpecialId[ownWpnId] == SPECIAL_SKULL9){
-		Holster_Post_Skull9(playerId , ent);
-	}
-	else if(g_iWpnSpecialId[ownWpnId] == SPECIAL_CROW9){
-		Holster_Post_Crow9(playerId , ent);	
-	}
-	else if(g_iWpnSpecialId[ownWpnId] == SPECIAL_RUNEBLADE){
-		Holster_Post_Runeblade(playerId , ent);
-	}
-	else if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALROG9){
-		Holster_Post_Balrog9(playerId , ent);
-	}
-	*/
+	HamF_Knife_Holster_Post_Special(ownWpnId , playerId , ent);
+	#endif
 	return HAM_IGNORED;
 }

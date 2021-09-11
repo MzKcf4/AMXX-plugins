@@ -1,3 +1,7 @@
+#if defined _ENABLE_SPECIAL_WPN
+#include "customwpn_core/customwpn_core_var_func_special.sma"
+#endif
+
 // #define NO_WPN_OWNED -1
 new const NO_WPN_OWNED = -1
 
@@ -160,83 +164,6 @@ new g_iAllocString_envSprite;
 // ============ Some constants ================= //
 new Float:g_vecZero[3]={0.0,0.0,0.0}
 
-enum _:ENTITY_CLASS (+=100)
-{
-	ENTCLASS_NADE=2000,
-	ENTCLASS_NADE_BOUNCE,
-	ENTCLASS_BOLT,
-	ENTCLASS_PLASMA,
-	ENTCLASS_SMOKE,
-	ENTCLASS_TKNIFE,
-	ENTCLASS_KILLME,
-	ENTCLASS_BOW,
-	ENTCLASS_DGUN,
-	ENTCLASS_SPEARGUN,
-	ENTCLASS_PETROL,
-	ENTCLASS_DESTROYER,
-	ENTCLASS_BLOCKMISSILE,
-	ENTCLASS_BOW,
-	ENTCLASS_FADEIN,
-	ENTCLASS_FIRE        //灭却星光 SME
-}
-
-enum _:SPECIAL_WPN
-{
-	SPECIAL_NON=-1,
-	SPECIAL_STARCHASERSR=0,
-	SPECIAL_DRAGONSWORD,
-	SPECIAL_BALISONG,
-	SPECIAL_SKULL9,
-	SPECIAL_CROW9,
-	SPECIAL_RUNEBLADE=5,
-	SPECIAL_BALROG9
-}
-
-enum _:HIT_RESULT
-{
-	RESULT_HIT_NONE = 0,
-	RESULT_HIT_PLAYER,
-	RESULT_HIT_WORLD
-}
-
-Util_PlayKnifeSoundByHitResult(id,iEnt,iHitResult,bStab)
-{
-	static iWpnId; iWpnId = Get_Owned_Wpn_By_CSW(CSW_KNIFE , id);
-	if(iWpnId == NO_WPN_OWNED)	return;
-
-
-	if(iHitResult == RESULT_HIT_NONE)
-	{
-		if(strlen(g_szKnifeSlashSound[iWpnId]) > 0){
-			emit_sound(iEnt, CHAN_WEAPON, g_szKnifeSlashSound[iWpnId], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		}
-		return;
-	}
-
-	if(iHitResult == RESULT_HIT_WORLD)
-	{
-		if(strlen(g_szKnifeHitWallSound[iWpnId]) > 0){
-			emit_sound(iEnt, CHAN_WEAPON, g_szKnifeHitWallSound[iWpnId], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		}
-		return;
-	}
-
-	if(iHitResult == RESULT_HIT_PLAYER)
-	{
-		if(bStab)
-		{
-			if(strlen(g_szKnifeStabSound[iWpnId]) > 0)
-				emit_sound(iEnt, CHAN_WEAPON, g_szKnifeStabSound[iWpnId], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		}
-		else
-		{
-			if(strlen(g_szKnifeHitSound[iWpnId]) > 0)
-				emit_sound(iEnt, CHAN_WEAPON, g_szKnifeHitSound[iWpnId], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		}
-		return;
-	}
-}
-
 public Get_Owned_Wpn_By_CSW(cswId , playerId)
 {
 	static i;
@@ -248,4 +175,154 @@ public Get_Owned_Wpn_By_CSW(cswId , playerId)
 		}
 	}
 	return NO_WPN_OWNED;
+}
+
+
+
+// ============================= STOCKS ========================================== //
+
+stock Set_WeaponAnim(id, anim)
+{
+	set_pev(id, pev_weaponanim, anim)
+	
+	message_begin(MSG_ONE_UNRELIABLE, SVC_WEAPONANIM, {0, 0, 0}, id)
+	write_byte(anim)
+	write_byte(pev(id, pev_body))
+	message_end()
+}
+
+
+stock Set_PlayerNextAttack(id, Float:nexttime)
+{
+	set_pdata_float(id, 83, nexttime, 5)
+}
+
+
+stock get_weapon_attachment(id, Float:output[3], Float:fDis = 40.0)
+{ 
+	static Float:vfEnd[3], viEnd[3] 
+	get_user_origin(id, viEnd, 3)  
+	IVecFVec(viEnd, vfEnd) 
+	
+	static Float:fOrigin[3], Float:fAngle[3]
+	
+	pev(id, pev_origin, fOrigin) 
+	pev(id, pev_view_ofs, fAngle)
+	
+	xs_vec_add(fOrigin, fAngle, fOrigin) 
+	
+	static Float:fAttack[3]
+	
+	xs_vec_sub(vfEnd, fOrigin, fAttack)
+	xs_vec_sub(vfEnd, fOrigin, fAttack) 
+	
+	static Float:fRate
+	
+	fRate = fDis / vector_length(fAttack)
+	xs_vec_mul_scalar(fAttack, fRate, fAttack)
+	
+	xs_vec_add(fOrigin, fAttack, output)
+}
+
+stock Make_BulletHole(id, Float:Origin[3], Float:Damage)
+{
+	// Find target
+	static Decal; Decal = random_num(41, 45)
+	static LoopTime; 
+	
+	if(Damage > 100.0) LoopTime = 2
+	else LoopTime = 1
+	
+	for(new i = 0; i < LoopTime; i++)
+	{
+		// Put decal on "world" (a wall)
+		message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
+		write_byte(TE_WORLDDECAL)
+		engfunc(EngFunc_WriteCoord, Origin[0])
+		engfunc(EngFunc_WriteCoord, Origin[1])
+		engfunc(EngFunc_WriteCoord, Origin[2])
+		write_byte(Decal)
+		message_end()
+		
+		// Show sparcles
+		message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
+		write_byte(TE_GUNSHOTDECAL)
+		engfunc(EngFunc_WriteCoord, Origin[0])
+		engfunc(EngFunc_WriteCoord, Origin[1])
+		engfunc(EngFunc_WriteCoord, Origin[2])
+		write_short(id)
+		write_byte(Decal)
+		message_end()
+	}
+}
+
+stock Make_BulletSmoke(id, TrResult)
+{
+	static Float:vecSrc[3], Float:vecEnd[3], TE_FLAG
+	
+	get_weapon_attachment(id, vecSrc)
+	global_get(glb_v_forward, vecEnd)
+    
+	xs_vec_mul_scalar(vecEnd, 8192.0, vecEnd)
+	xs_vec_add(vecSrc, vecEnd, vecEnd)
+
+	get_tr2(TrResult, TR_vecEndPos, vecSrc)
+	get_tr2(TrResult, TR_vecPlaneNormal, vecEnd)
+    
+	xs_vec_mul_scalar(vecEnd, 2.5, vecEnd)
+	xs_vec_add(vecSrc, vecEnd, vecEnd)
+    
+	TE_FLAG |= TE_EXPLFLAG_NODLIGHTS
+	TE_FLAG |= TE_EXPLFLAG_NOSOUND
+	TE_FLAG |= TE_EXPLFLAG_NOPARTICLES
+	
+	engfunc(EngFunc_MessageBegin, MSG_PAS, SVC_TEMPENTITY, vecEnd, 0)
+	write_byte(TE_EXPLOSION)
+	engfunc(EngFunc_WriteCoord, vecEnd[0])
+	engfunc(EngFunc_WriteCoord, vecEnd[1])
+	engfunc(EngFunc_WriteCoord, vecEnd[2] - 10.0)
+	write_short(g_SmokePuff_SprId)
+	write_byte(2)
+	write_byte(50)
+	write_byte(TE_FLAG)
+	message_end()
+}
+
+
+stock Drop_Primary_Weapon(playerId) 
+{
+	new weapons[32], num
+	get_user_weapons(playerId, weapons, num)
+	for (new i = 0; i < num; i++) 
+	{
+		if (PRIMARY & (1<<weapons[i])) 
+		{
+			static wname[32]
+			get_weaponname(weapons[i], wname, sizeof wname - 1)
+			engclient_cmd(playerId, "drop", wname)
+		}
+	}
+}
+
+stock Drop_Secondary_Weapon(playerId) 
+{
+	new weapons[32], num
+	get_user_weapons(playerId, weapons, num)
+	for (new i = 0; i < num; i++) 
+	{
+		if (SECONDARY & (1<<weapons[i])) 
+		{
+			static wname[32]
+			get_weaponname(weapons[i], wname, sizeof wname - 1)
+			engclient_cmd(playerId, "drop", wname)
+		}
+	}
+}
+
+stock fm_get_weapon_ent_owner(ent)
+{
+	if(pev_valid(ent) != OFFSET_PDATA)
+		return -1;
+	
+	return get_pdata_cbase(ent, OFFSET_WEAPON_OWNER, OFFSET_LINUX_WEAPONS);
 }

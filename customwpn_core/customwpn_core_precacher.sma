@@ -37,7 +37,6 @@ load_chosen_resource(JSON:jLoadedWpnObj)
 	new strBuffer[64];
 	for(new i = 0 ; i < json_array_get_count(jLoadedWpnObj) ; i++)
 	{
-		console_print(0, "%i", g_iWpnCount);
 		entryJsonObj = json_array_get_value(jLoadedWpnObj , i)
 		// ------- Basic Info ------- //
 		g_iImpulse[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_IMPULSE_ID);

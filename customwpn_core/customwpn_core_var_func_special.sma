@@ -1,7 +1,105 @@
+#define LINUX_OFFSET 		4
+#define m_pPlayer		41
+#define m_iId			43
+#define m_fKnown		44
+#define m_flNextPrimaryAttack	46
+#define m_flNextSecondaryAttack	47
+#define m_flTimeWeaponIdle	48
+#define m_iPrimaryAmmoType	49
+#define m_iClip			51
+#define m_fInReload	 	54		// Are we in the middle of a reload ?
+#define m_fInSpecialReload      55		// Middle of Shotgun reload
+#define m_flAccuracy            62		
+#define m_iShotsFired 	64
+#define m_fWeaponState		74
+#define m_flNextAttack		83
+
+new g_iAllocString_infoTarget;
+new g_iAllocString_envSprite;
+
+// ============ Some constants ================= //
+new Float:g_vecZero[3]={0.0,0.0,0.0}
+
+enum _:ENTITY_CLASS (+=100)
+{
+	ENTCLASS_NADE=2000,
+	ENTCLASS_NADE_BOUNCE,
+	ENTCLASS_BOLT,
+	ENTCLASS_PLASMA,
+	ENTCLASS_SMOKE,
+	ENTCLASS_TKNIFE,
+	ENTCLASS_KILLME,
+	ENTCLASS_BOW,
+	ENTCLASS_DGUN,
+	ENTCLASS_SPEARGUN,
+	ENTCLASS_PETROL,
+	ENTCLASS_DESTROYER,
+	ENTCLASS_BLOCKMISSILE,
+	ENTCLASS_BOW,
+	ENTCLASS_FADEIN,
+	ENTCLASS_FIRE        //灭却星光 SME
+}
+
+enum _:SPECIAL_WPN
+{
+	SPECIAL_NON=-1,
+	SPECIAL_STARCHASERSR=0,
+	SPECIAL_DRAGONSWORD,
+	SPECIAL_BALISONG,
+	SPECIAL_SKULL9,
+	SPECIAL_CROW9,
+	SPECIAL_RUNEBLADE=5,
+	SPECIAL_BALROG9
+}
+
+enum _:HIT_RESULT
+{
+	RESULT_HIT_NONE = 0,
+	RESULT_HIT_PLAYER,
+	RESULT_HIT_WORLD
+}
+
+Util_PlayKnifeSoundByHitResult(id,iEnt,iHitResult,bStab)
+{
+	static iWpnId; iWpnId = Get_Owned_Wpn_By_CSW(CSW_KNIFE , id);
+	if(iWpnId == NO_WPN_OWNED)	return;
+
+
+	if(iHitResult == RESULT_HIT_NONE)
+	{
+		if(strlen(g_szKnifeSlashSound[iWpnId]) > 0){
+			emit_sound(iEnt, CHAN_WEAPON, g_szKnifeSlashSound[iWpnId], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		}
+		return;
+	}
+
+	if(iHitResult == RESULT_HIT_WORLD)
+	{
+		if(strlen(g_szKnifeHitWallSound[iWpnId]) > 0){
+			emit_sound(iEnt, CHAN_WEAPON, g_szKnifeHitWallSound[iWpnId], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		}
+		return;
+	}
+
+	if(iHitResult == RESULT_HIT_PLAYER)
+	{
+		if(bStab)
+		{
+			if(strlen(g_szKnifeStabSound[iWpnId]) > 0)
+				emit_sound(iEnt, CHAN_WEAPON, g_szKnifeStabSound[iWpnId], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		}
+		else
+		{
+			if(strlen(g_szKnifeHitSound[iWpnId]) > 0)
+				emit_sound(iEnt, CHAN_WEAPON, g_szKnifeHitSound[iWpnId], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		}
+		return;
+	}
+}
+
+// Knife radius stocks are from BTE-AMXX : https://github.com/MoeMod/BTE-AMXX
 #define TRUE 1
 #define FALSE 0
-
-
 
 // cbase.h
 #define CLASS_NONE 0
