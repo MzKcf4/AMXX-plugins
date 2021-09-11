@@ -1,3 +1,4 @@
+// #define _ENABLE_SPECIAL_WPN
 #include <amxmodx>
 #include <amxmisc>
 #include <engine>
@@ -9,11 +10,11 @@
 #include <fun>
 #include <string>
 #include <stripweapons>
-#include <customwpn_const>
 #include <cs_ham_bots_api>
 #include <reapi>
 #include <json>
 #include <customwpn_json_const>
+#include <customwpn_const>
 #include "customwpn_core/customwpn_core_variables.sma"
 #include "customwpn_core/customwpn_core_stocks.sma"
 #include "customwpn_core/customwpn_core_precacher.sma"
@@ -57,9 +58,7 @@ public plugin_init() {
 	
 	// Shooting speed
 	register_event("CurWeapon", "Event_CurWeapon", "be", "1=1")
-	// Remove weapons
-	// register_event("DeathMsg", "Event_Client_Killed", "a"); 
-	
+
 	// Bullet holes
 	RegisterHam(Ham_TraceAttack, "worldspawn", "fw_TraceAttack_World");
 	RegisterHam(Ham_TraceAttack, "func_breakable", "fw_TraceAttack_World");
@@ -535,7 +534,7 @@ public reset_player_wpn(id)
 
 reset_player_knife(id)
 {
-	for(new i = 0 ; i < MAX_WPN ; i++)
+	for(new i = 0 ; i < GLOBAL_MAX_WPN ; i++)
 	{
 		if(g_iWpnCswId[i] == CSW_KNIFE)
 		{
@@ -771,9 +770,9 @@ public Array:native_core_get_wpn_of_type(plugin_id, num_params)
 {
 	new iWpnType = get_param(1);
 	static iWpnId;
-	new Array:array = ArrayCreate(1 , MAX_WPN);
+	new Array:array = ArrayCreate(1 , GLOBAL_MAX_WPN);
 	
-	for(iWpnId = 0 ; iWpnId < MAX_WPN ; iWpnId++)
+	for(iWpnId = 0 ; iWpnId < GLOBAL_MAX_WPN ; iWpnId++)
 	{
 		if(iWpnType & ( 1 << g_iWpnCswId[iWpnId]))
 		{
@@ -786,7 +785,7 @@ public Array:native_core_get_wpn_of_type(plugin_id, num_params)
 public native_core_remove_all_player_wpn(plugin_id, num_params)
 {
 	new iPlayerId = get_param(1);
-	for(new i = 0 ; i < MAX_WPN ; i++)
+	for(new i = 0 ; i < GLOBAL_MAX_WPN ; i++)
 	{
 		if( !(g_iWpnCswId[i] == CSW_KNIFE))
 		{

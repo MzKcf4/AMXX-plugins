@@ -36,11 +36,6 @@ new const JSON_SHOOT_SEQ_SPECIAL[] = "shootSequenceSpecial";
 new const JSON_RELOAD_SEQ[] = "reloadSequence";
 new const JSON_DRAW_SEQ[] = "drawSequence";
 
-new const JSON_Z_DMG_MULTIPLIER[] = "zdmgMultiplier";
-new const JSON_Z_TIER[] = "ztier";
-new const JSON_Z_KNOCKBACK[] = "zknockback";
-new const JSON_Z_SUBTYPE[] = "zsubtype";
-
 // ============ KNIFE =============== //
 /*
 new const JSON_KNIFE_LEFT_DMG[] =

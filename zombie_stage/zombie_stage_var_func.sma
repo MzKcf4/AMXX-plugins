@@ -1,3 +1,6 @@
+#include <customwpn_loader_api>
+#include <json>
+
 const WPN_MELEE = (1<<CSW_KNIFE)
 const WPN_SHOTGUN = ((1<<CSW_M3)|(1<<CSW_XM1014))
 const WPN_SMG = ((1<<CSW_MP5NAVY)|(1<<CSW_TMP)|(1<<CSW_MAC10)|(1<<CSW_UMP45)|(1<<CSW_P90)|(1<<CSW_M249))
@@ -87,10 +90,10 @@ new Float:g_fPlayerZombieKnockback[MAX_PLAYERS + 1]	// Individual knockback mult
 new bool:g_bProgressEnd;
 
 // ============ Weapon param override for Zombie mode ================== //
-new Float:g_fWpnKnockback[MAX_WPN] = {-1.0 , ...}		// ZombieMod: Knockback for zombie mode
-new Float:g_fWpnDmgMultiplierZ[MAX_WPN] = {-1.0 , ...}	// ZombieMod: Dmg multiplier when zombie mode is active
-new g_iWpnZTier[MAX_WPN] = {-1 , ...}					// ZombieMod: "Tier" for Zombie mode's weapon system
-new g_iWpnZSubType[MAX_WPN] = {-1 , ...}				// ZombieMod: SubType of Secondary weapon 
+new Float:g_fWpnKnockback[GLOBAL_MAX_WPN] = {-1.0 , ...}		// ZombieMod: Knockback for zombie mode
+new Float:g_fWpnDmgMultiplierZ[GLOBAL_MAX_WPN] = {-1.0 , ...}	// ZombieMod: Dmg multiplier when zombie mode is active
+new g_iWpnZTier[GLOBAL_MAX_WPN] = {-1 , ...}					// ZombieMod: "Tier" for Zombie mode's weapon system
+new g_iWpnZSubType[GLOBAL_MAX_WPN] = {-1 , ...}					// ZombieMod: SubType of Secondary weapon 
 
 new const HUMAN_WIN_SOUND[] = "sound/zombie_plague/win_human.wav"
 new const ZOMBIE_WIN_SOUND[] = "sound/zombie_plague/win_zombie.wav"
@@ -103,12 +106,49 @@ enum _:WINNER {
 	WINNER_ZOMBIE
 }
 
+/*
 enum _:ZSubType
 {
 	ZSubType_NONE = -1,
 	ZSubType_SUP,
 	ZSubType_DMG
 }
+*/
+
+var_func_load_z_params()
+{
+
+	new JSON:jLoadedWpnObj = api_get_loaded_wpn();
+	new JSON:jWpnEntry;	
+
+	new iEntryCount = json_array_get_count(jLoadedWpnObj);
+
+	for(new i = 0 ; i < iEntryCount ; i++)
+	{
+		jWpnEntry = json_array_get_value(jLoadedWpnObj , i)
+
+		g_fWpnDmgMultiplierZ[i] = json_object_get_real(jWpnEntry, JSON_Z_DMG_MULTIPLIER);
+		g_fWpnKnockback[i] = json_object_get_real(jWpnEntry, JSON_Z_KNOCKBACK);
+		g_iWpnZTier[i] = json_object_get_number(jWpnEntry, JSON_Z_TIER);
+		g_iWpnZSubType[i] = json_object_get_number(jWpnEntry, JSON_Z_SUBTYPE);
+	}
+
+	json_free(jWpnEntry);
+}
+
+Array:get_wpn_of_ztier(iZTier)
+{
+	new iWpnId;
+	new Array:array = ArrayCreate();
+	
+	for(iWpnId = 0 ; iWpnId < GLOBAL_MAX_WPN ; iWpnId++)
+	{
+		if(g_iWpnZTier[iWpnId] == iZTier)
+			ArrayPushCell(array, iWpnId);
+	}
+	return array;
+}
+
 
 public bool:is_zombie(id)
 {

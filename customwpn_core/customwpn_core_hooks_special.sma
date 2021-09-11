@@ -1,13 +1,12 @@
-// #define _ENABLE_SPECIAL_WPN
-#if defined _ENABLE_SPECIAL_WPN
+/*
 #include "special_wpn/starchasersr.sma"
 #include "special_wpn/dragonsword.sma"
 #include "special_wpn/skull9.sma"
 #include "special_wpn/crow9.sma"
 #include "special_wpn/runeblade.sma"
 #include "special_wpn/balrog9.sma"
+*/
 #include "special_wpn/balisong.sma"
-#endif
 
 
 precache_special()
@@ -627,14 +626,12 @@ public HamF_Knife_SecondaryAttack_Pre(ent)
 		SecondaryAttack_Pre_Balrog9(playerId , ent);
 		return HAM_SUPERCEDE;
 	}
-	
+	*/
 
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALISONG){
 		SecondaryAttack_Pre_Balisong(playerId , ent);
-	
 		return HAM_IGNORED;
 	}
-	*/
 	return HAM_IGNORED;
 }
 
@@ -648,13 +645,11 @@ public HamF_Knife_SecondaryAttack_Post(ent)
 
 	if(!is_user_alive(playerId))
 		return HAM_IGNORED
-	/*
+	
 	if(g_iWpnSpecialId[ownWpnId] == SPECIAL_BALISONG){
 		SecondaryAttack_Post_Balisong(playerId , ent);
-	
 		return HAM_IGNORED;
 	}
-	*/
 	return HAM_IGNORED;
 	
 }

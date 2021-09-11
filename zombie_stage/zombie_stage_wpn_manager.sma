@@ -1,5 +1,4 @@
-#include <wpn_core>
-#include <wpn_const>
+#include <customwpn_const>
 
 #define TIER_1 0
 #define TIER_2 1
@@ -50,11 +49,11 @@ prepareWpn()
 {
 	for(new iTier = 0 ; iTier < sizeof(g_iWpnId_InTier) ; iTier++)
 	{
-		new Array:wpnIds = wpn_core_get_wpn_of_tier(iTier+1);	// +1 , as there is no T0
+		new Array:wpnIds = get_wpn_of_ztier(iTier+1);	// +1 , as there is no T0
 		for(new i = 0 ; i < ArraySize(wpnIds); i++)
 		{
 			new iWpnId = ArrayGetCell(wpnIds , i);
-			new iCswId = 1 << wpn_core_get_wpn_cswId(iWpnId);
+			new iCswId = 1 << api_core_get_wpn_cswId(iWpnId);
 			if(iCswId & WPN_MELEE)
 				g_iWpnId_InTier[iTier][CLASS_MELEE] = iWpnId;
 			else if(iCswId & WPN_SHOTGUN)
@@ -70,7 +69,7 @@ prepareWpn()
 			else if(iCswId & WPN_PISTOL)
 			{
 				// Pick depends on SubType of pistol
-				new iSubType = wpn_core_get_wpn_z_subtype(iWpnId);
+				new iSubType = g_iWpnZSubType[iWpnId];
 				if(iSubType == ZSubType_SUP)
 					g_iWpnId_InTier[iTier][SUB_CLASS_SUP] = iWpnId;
 				else
@@ -98,15 +97,15 @@ round_start_post_wpn_mgr()
 		g_iPlayerWpnTierPrimary[i] = TIER_1;
 		// We use 0 here , because stage is 1,2,3,4,5,6 , for calculating diff of 2 , we need to start with 0
 		g_iPlayerWpnTierSecondary[i] = 0;
-		wpn_core_remove_all_player_wpn(i);
+		api_core_remove_all_player_wpn(i);
 		if(is_user_alive(i) && !is_zombie(i))
 		{
 			strip_user_weapons(i)
-			wpn_core_remove_all_player_wpn(i)
-			wpn_core_reset_player_knife(i)
+			api_core_remove_all_player_wpn(i)
+			api_core_reset_player_knife(i)
 
 			give_item(i, "weapon_knife")
-			wpn_core_give_wpn(i , iTierOnePistol_WpnId);
+			api_core_give_wpn(i , iTierOnePistol_WpnId);
 		}
 	}
 }
@@ -191,7 +190,7 @@ public show_menu_wpn_upgrade_primary(id)
 	new iPlyNextWpnId = g_iWpnId_InTier[iPlyTier + 1][iPlyWpnClass];
 	new szNextWpnName[32];
 
-	wpn_core_get_wpn_display_name_2(iPlyNextWpnId , szNextWpnName);
+	api_core_get_wpn_display_name(iPlyNextWpnId , szNextWpnName);
 
 	static szTitle[128];
 	formatex(szTitle, charsmax(szTitle), "\r Upgrade weapon to %s", szNextWpnName)
@@ -216,7 +215,7 @@ public menu_wpn_upgrade_primary_handler(id, menu, item)
         	new iPlyWpnClass = g_iPlayerWpnClass[id];
         	new iPlyTier = g_iPlayerWpnTierPrimary[id];
         	new iPlyNextWpnId = g_iWpnId_InTier[iPlyTier + 1][iPlyWpnClass];
-        	wpn_core_give_wpn(id, iPlyNextWpnId);
+        	api_core_give_wpn(id, iPlyNextWpnId);
         	g_iPlayerWpnTierPrimary[id]++;
         	g_iToken[id]--;
         }
@@ -281,7 +280,7 @@ public show_menu_wpn_upgrade_secondary(id)
 	new iPlyNextWpnId = g_iWpnId_InTier[iPlyTier + 1][iPlySubClass];
 	new szNextWpnName[32];
 
-	wpn_core_get_wpn_display_name_2(iPlyNextWpnId , szNextWpnName);
+	api_core_get_wpn_display_name(iPlyNextWpnId , szNextWpnName);
 	static szTitle[64];
 	formatex(szTitle, charsmax(szTitle), "\r Upgrade weapon to %s", szNextWpnName)
 
@@ -305,7 +304,7 @@ public menu_wpn_upgrade_secondary_handler(id, menu, item)
     		new iPlySubClass = g_iPlayerWpnSubClass[id]	;
         	new iPlyTier = g_iPlayerWpnTierSecondary[id];
         	new iPlyNextWpnId = g_iWpnId_InTier[iPlyTier + 1][iPlySubClass];
-        	wpn_core_give_wpn(id, iPlyNextWpnId);
+        	api_core_give_wpn(id, iPlyNextWpnId);
         	g_iPlayerWpnTierSecondary[id] += 2;
         	g_iToken[id] -= 1;
         }
@@ -373,7 +372,7 @@ public TierMenu_Show(iPlayerId , iTier)
 		if(g_iWpnId_InTier[iTier][i] == NO_WPN)
 			break;
 		static szWpnName[48];
-		wpn_core_get_wpn_display_name_2(g_iWpnId_InTier[iTier][i] , szWpnName)
+		api_core_get_wpn_display_name(g_iWpnId_InTier[iTier][i] , szWpnName)
 		formatex(szDisplay, charsmax(szDisplay), "%s %s", get_wpn_type(g_iWpnId_InTier[iTier][i]) , szWpnName)
 
 		// Use ID for both CSW + WpnId compability
@@ -394,7 +393,7 @@ public TierMenu_Handler(id, menu, item)
 
 get_wpn_type(wpnid)
 {
-	static cswId; cswId = (1 << wpn_core_get_wpn_cswId(wpnid));
+	static cswId; cswId = (1 << api_core_get_wpn_cswId(wpnid));
 	static sz[5];
 	
 	if(cswId & GENERAL_TYPE)

@@ -9,18 +9,19 @@
 #include <fakemeta_util>
 #include <hamsandwich>
 #include <fun>
-#include <zombie_scenario_const>
+#include <zombie_stage_const>
 #include <hudmessage_queue>
-#include <wpn_core>
-#include "zombie_stage_var_func.sma"
-#include "zombie_stage_random_spawn_points.sma"
-#include "zombie_stage_wpn_manager.sma"
-#include "zombie_stage_ammopack.sma"
-#include "zombie_stage_health_regeneration.sma"
-#include "zombie_stage_zombie_random_respawn.sma"
-#include "zombie_stage_human_revive.sma"
-#include "zombie_stage_human_trait.sma"
-#include "zombie_stage_relic.sma"
+#include <customwpn_const>
+#include <customwpn_core_api>
+#include "zombie_stage/zombie_stage_var_func.sma"
+#include "zombie_stage/zombie_stage_random_spawn_points.sma"
+#include "zombie_stage/zombie_stage_wpn_manager.sma"
+#include "zombie_stage/zombie_stage_ammopack.sma"
+#include "zombie_stage/zombie_stage_health_regeneration.sma"
+#include "zombie_stage/zombie_stage_zombie_random_respawn.sma"
+#include "zombie_stage/zombie_stage_human_revive.sma"
+#include "zombie_stage/zombie_stage_human_trait.sma"
+#include "zombie_stage/zombie_stage_relic.sma"
 
 #define PLUGIN  "Custom Wpn - Zombie Stage"
 #define VERSION "1.0"
@@ -28,6 +29,8 @@
 
 #define TASK_PROGRESS   4001
 #define TASK_CHANGE_BOT_MODE 80
+
+#define KNIFE_MIN_DIST_ZOMBIE_MOD 64.0
 
 new cvar_init_bot_count;
 new cvar_health_multiplier;
@@ -50,7 +53,6 @@ public plugin_init()
 	RegisterHam(Ham_TakeDamage, "player", "Ham_TakeDamage_Pre");
 	RegisterHam(Ham_TakeDamage, "player", "Ham_TakeDamage_Post" , 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_knife", "Ham_Knife_PrimaryAttack_Post" , 1);
-	// RegisterHamBots(Ham_Weapon_PrimaryAttack, "weapon_knife","Ham_Knife_PrimaryAttack_Pre");
 	
 	// For setting speed
 	RegisterHam(Ham_Item_PreFrame,"player","Ham_Item_PreFrame_Post",1);
@@ -67,6 +69,7 @@ public plugin_init()
 	g_Forwards[FW_ROUND_START_POST] = CreateMultiForward("zs_fw_core_round_start_post", ET_IGNORE)
 	g_Forwards[FW_ROUND_END_POST] = CreateMultiForward("zs_fw_core_round_end_post", ET_IGNORE)
 	g_Forwards[FW_ZOMBIE_KILLED_POST] = CreateMultiForward("zs_fw_core_zombie_killed_post", ET_IGNORE, FP_CELL)
+
 	cvar_init_bot_count = register_cvar("zs_init_bot_count" , "6")
 	cvar_health_multiplier = register_cvar("zs_health_multiplier_per_player" , "1.2")
 	cvar_rest_time = register_cvar("zs_rest_time" , "30")
@@ -107,6 +110,8 @@ public plugin_precache()
 	precache_generic(ZOMBIE_WIN_SOUND)
 	precache_generic(ZOMBIE_EVOLVE_SOUND)
 
+
+	var_func_load_z_params();
 	plugin_precache_ammopack();
 	plugin_precache_zombie_random_respawn();
 	plugin_precache_human_trait();
@@ -374,7 +379,6 @@ public Ham_Knife_PrimaryAttack_Post(ent)
 	{
 		set_pdata_float(ent, m_flNextPrimaryAttack, 1.5);
 		set_pdata_float(ent, m_flNextSecondaryAttack, 1.5);
-		console_print(0 , "Set to 1.5");
 	}
 	return HAM_IGNORED
 }

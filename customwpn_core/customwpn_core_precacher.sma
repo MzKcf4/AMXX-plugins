@@ -37,6 +37,7 @@ load_chosen_resource(JSON:jLoadedWpnObj)
 	new strBuffer[64];
 	for(new i = 0 ; i < json_array_get_count(jLoadedWpnObj) ; i++)
 	{
+		console_print(0, "%i", g_iWpnCount);
 		entryJsonObj = json_array_get_value(jLoadedWpnObj , i)
 		// ------- Basic Info ------- //
 		g_iImpulse[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_IMPULSE_ID);
@@ -100,12 +101,6 @@ load_chosen_resource(JSON:jLoadedWpnObj)
 		g_iWpnShootSecondaySeqId[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_SHOOT_SEQ_SPECIAL);
 		g_iWpnReloadSeqId[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_RELOAD_SEQ);
 		g_iWpnDrawSeqId[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_DRAW_SEQ);
-
-		// ----------- Zombie related param ----------- //
-		// g_fWpnDmgMultiplierZ[g_iWpnCount] = json_object_get_real(entryJsonObj, JSON_Z_DMG_MULTIPLIER);
-		// g_fWpnKnockback[g_iWpnCount] = json_object_get_real(entryJsonObj, JSON_Z_KNOCKBACK);
-		// g_iWpnZTier[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_Z_TIER);
-		// g_iWpnZSubType[g_iWpnCount] = json_object_get_number(entryJsonObj, JSON_Z_SUBTYPE);
 
 		if(g_iWpnCswId[g_iWpnCount] == CSW_KNIFE)
 			load_chosen_resource_knife(g_iImpulse[g_iWpnCount] , g_iWpnCount);
@@ -270,9 +265,5 @@ public Array:get_json_key_set()
 	ArrayPushString(ary_JsonKeys, JSON_SHOOT_SEQ_SPECIAL);
 	ArrayPushString(ary_JsonKeys, JSON_RELOAD_SEQ);
 	ArrayPushString(ary_JsonKeys, JSON_DRAW_SEQ);
-	ArrayPushString(ary_JsonKeys, JSON_Z_DMG_MULTIPLIER);
-	ArrayPushString(ary_JsonKeys, JSON_Z_TIER);
-	ArrayPushString(ary_JsonKeys, JSON_Z_KNOCKBACK);
-	ArrayPushString(ary_JsonKeys, JSON_Z_SUBTYPE);
 	return ary_JsonKeys;
 }

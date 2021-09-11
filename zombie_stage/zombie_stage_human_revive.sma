@@ -140,7 +140,7 @@ Ham_Killed_Pre_Human_Revive(victim, attacker, shouldgib)
 		get_user_weapons(victim, weapons, num)
 		for (new i = 0; i < num; i++) 
 		{
-			new iWpnId = wpn_core_get_owned_wpnId(victim, weapons[i])
+			new iWpnId = api_core_get_owned_wpnId(victim, weapons[i])
 			if (PRIMARY & (1 << weapons[i])) 
 				g_iPlayerPrimaryWpn[victim] = iWpnId;
 
@@ -261,9 +261,9 @@ public strip_and_give_wpn(taskid)
 	cs_set_user_nvg(iPlayerId , 1);
 
 	if(iPrimaryWpnId > NOT_TAKEN)
-		wpn_core_give_wpn(iPlayerId, iPrimaryWpnId)
+		api_core_give_wpn(iPlayerId, iPrimaryWpnId)
 	if(iSecondaryWpnId > NOT_TAKEN)
-		wpn_core_give_wpn(iPlayerId, iSecondaryWpnId)
+		api_core_give_wpn(iPlayerId, iSecondaryWpnId)
 
 }
 

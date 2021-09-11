@@ -183,7 +183,6 @@ pick_wpn_of_type(JSON:jFullWpnObj, iTargetCswType, iLoadCount)
 			{
 				iLoaded++;
 				add_wpn_to_trie(strBuffer);
-				json_object_get_string(jWpnEntry, JSON_DISPLAY_NAME, strBuffer, charsmax(strBuffer));
 				json_array_append_value(g_json_pickedWpn , jWpnEntry);
 			}
 

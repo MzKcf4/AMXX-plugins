@@ -100,54 +100,52 @@ new const g_szWbox_model_prefix[] = "models/w_"
 
 new g_SmokePuff_SprId;
 
-#define MAX_WPN 32
-
 // --- The args  [id][arg] --- //
-new g_iImpulse[MAX_WPN]						// 7 digit unique impulse id
-new g_szWpnId[MAX_WPN][32]					// weapon_xxxxx
-new g_szWpnIdOld[MAX_WPN][32]  				// old weapon to replace
-new g_iWpnCswId[MAX_WPN]	  				// The corresponding CSW_ID of the weapon
-new g_szWpnDisplayName[MAX_WPN][32]			// display name in buy menu
-new g_szModel_V[MAX_WPN][64]
-new g_szModel_P[MAX_WPN][64]
-new g_szModel_W[MAX_WPN][64]
-new g_szSprite[MAX_WPN][64]					// The weapon sprite text 
-new g_iWpnCost[MAX_WPN]
-new g_bAutoMode[MAX_WPN]					// [Pistol Only] automatic shoot
-new g_bClipReload[MAX_WPN]					// [Shotgun Only] Clip reload
-new g_bOverride[MAX_WPN]					// Whether to use custom sound handling for the wpn , to use custom sound , you MUST enable override
-new g_szWpnShootSound[MAX_WPN][64]			// The sound file for shooting
-new g_szWpnShootSoundSilenced[MAX_WPN][64]  // The sound file for slienced shooting ( USP & M4 only )
-// new g_szWpnShootEvent[MAX_WPN][32]    		// The event/xxx.sc to hook
-// new g_WpnEventSc[MAX_WPN]					// The event object held after hooking the event/xxx.sc
+new g_iImpulse[GLOBAL_MAX_WPN]						// 7 digit unique impulse id
+new g_szWpnId[GLOBAL_MAX_WPN][32]					// weapon_xxxxx
+new g_szWpnIdOld[GLOBAL_MAX_WPN][32]  				// old weapon to replace
+new g_iWpnCswId[GLOBAL_MAX_WPN]	  				// The corresponding CSW_ID of the weapon
+new g_szWpnDisplayName[GLOBAL_MAX_WPN][32]			// display name in buy menu
+new g_szModel_V[GLOBAL_MAX_WPN][64]
+new g_szModel_P[GLOBAL_MAX_WPN][64]
+new g_szModel_W[GLOBAL_MAX_WPN][64]
+new g_szSprite[GLOBAL_MAX_WPN][64]					// The weapon sprite text 
+new g_iWpnCost[GLOBAL_MAX_WPN]
+new g_bAutoMode[GLOBAL_MAX_WPN]					// [Pistol Only] automatic shoot
+new g_bClipReload[GLOBAL_MAX_WPN]					// [Shotgun Only] Clip reload
+new g_bOverride[GLOBAL_MAX_WPN]					// Whether to use custom sound handling for the wpn , to use custom sound , you MUST enable override
+new g_szWpnShootSound[GLOBAL_MAX_WPN][64]			// The sound file for shooting
+new g_szWpnShootSoundSilenced[GLOBAL_MAX_WPN][64]  // The sound file for slienced shooting ( USP & M4 only )
+// new g_szWpnShootEvent[GLOBAL_MAX_WPN][32]    		// The event/xxx.sc to hook
+// new g_WpnEventSc[GLOBAL_MAX_WPN]					// The event object held after hooking the event/xxx.sc
 // new g_scToHook;								// The bit of CSW to show which g_CSW_SC to hook.
-new g_iWpnEventScId[MAX_WPN]				// The eventid of object held after hooking the event/xxx.sc
-new Float:g_fWpnDmgMultiplier[MAX_WPN] = {-1.0 , ...}		// The multiplier base on base damage of that wpn
-new Float:g_fWpnShootDelay[MAX_WPN]						// The delay between each shots , in seconds
-new g_iWpnMoveSpeed[MAX_WPN]							// The movement speed of this Wpn	
-new Float:g_fWpnRecoil[MAX_WPN]							// The recoil multiplier for that wpn
-new Float:g_fWpnReloadTime[MAX_WPN]         			// The reload time of weapon , in seconds 
-new g_iWpnShootSeqId[MAX_WPN]         					// The 'shoot"(or shoot-unsil) sequence id in the v_model
-new g_iWpnShootSecondaySeqId[MAX_WPN]       			// The 'shoot" slience sequence id in the v_model for USP and M4A1 , OR , right shoot sequence for elite
-new g_iWpnReloadSeqId[MAX_WPN]        					// The "reload" sequence id in the v_model
-new g_iWpnDrawSeqId[MAX_WPN]         					// The "draw" sequence id in the v_model 
-new g_iWpnSpecialId[MAX_WPN]				// > -1 , if this wpn has special attack / handling
+new g_iWpnEventScId[GLOBAL_MAX_WPN]				// The eventid of object held after hooking the event/xxx.sc
+new Float:g_fWpnDmgMultiplier[GLOBAL_MAX_WPN] = {-1.0 , ...}		// The multiplier base on base damage of that wpn
+new Float:g_fWpnShootDelay[GLOBAL_MAX_WPN]						// The delay between each shots , in seconds
+new g_iWpnMoveSpeed[GLOBAL_MAX_WPN]							// The movement speed of this Wpn	
+new Float:g_fWpnRecoil[GLOBAL_MAX_WPN]							// The recoil multiplier for that wpn
+new Float:g_fWpnReloadTime[GLOBAL_MAX_WPN]         			// The reload time of weapon , in seconds 
+new g_iWpnShootSeqId[GLOBAL_MAX_WPN]         					// The 'shoot"(or shoot-unsil) sequence id in the v_model
+new g_iWpnShootSecondaySeqId[GLOBAL_MAX_WPN]       			// The 'shoot" slience sequence id in the v_model for USP and M4A1 , OR , right shoot sequence for elite
+new g_iWpnReloadSeqId[GLOBAL_MAX_WPN]        					// The "reload" sequence id in the v_model
+new g_iWpnDrawSeqId[GLOBAL_MAX_WPN]         					// The "draw" sequence id in the v_model 
+new g_iWpnSpecialId[GLOBAL_MAX_WPN]				// > -1 , if this wpn has special attack / handling
 
-new g_iWpnClip[MAX_WPN]						// The clip size of the weapon
+new g_iWpnClip[GLOBAL_MAX_WPN]						// The clip size of the weapon
 
 // ----------------------- Knife sounds --------------------------------- //
-new g_szKnifeHitSound[MAX_WPN][64]
-new g_szKnifeHitWallSound[MAX_WPN][64]
-new g_szKnifeSlashSound[MAX_WPN][64]
-new g_szKnifeStabSound[MAX_WPN][64]
+new g_szKnifeHitSound[GLOBAL_MAX_WPN][64]
+new g_szKnifeHitWallSound[GLOBAL_MAX_WPN][64]
+new g_szKnifeSlashSound[GLOBAL_MAX_WPN][64]
+new g_szKnifeStabSound[GLOBAL_MAX_WPN][64]
 
 
 // Rotation related
 new g_iWpnCount = 0;	// How many wpn registered?
 
 // ============
-new g_HadWpn[MAX_WPN]			// An array of a 32 bit value, each bit correspond to a playerId , 1 = own weapon , 0 = not
-new g_WpnState[MAX_PLAYERS + 1][MAX_WPN]		// The weapon state of each player's Wpn : "[1][3] = 1 " means : player id 1's  wpn 4  has usp slicened.
+new g_HadWpn[GLOBAL_MAX_WPN]			// An array of a 32 bit value, each bit correspond to a playerId , 1 = own weapon , 0 = not
+new g_WpnState[MAX_PLAYERS + 1][GLOBAL_MAX_WPN]		// The weapon state of each player's Wpn : "[1][3] = 1 " means : player id 1's  wpn 4  has usp slicened.
 new Float:g_fPushAngle[MAX_PLAYERS + 1][3];	// The current recoil angle of the weapon that player is holding
 new g_iPlayerWpnClip[33];						// The clip info used for reloading of each player's wpn
 

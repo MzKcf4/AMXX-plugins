@@ -5,6 +5,8 @@
 
 #pragma library wpn_const
 
+#define GLOBAL_MAX_WPN 64
+
 
 #define PISTOL_TYPE ((1<<CSW_P228) | (1<<CSW_ELITE) | (1<<CSW_FIVESEVEN) | (1<<CSW_USP) | (1<<CSW_GLOCK18) | (1<<CSW_DEAGLE))
 #define SHOTGUN_TYPE ((1<<CSW_M3) | (1<<CSW_XM1014))
