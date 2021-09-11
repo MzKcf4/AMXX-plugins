@@ -98,6 +98,10 @@ pick_wpn_of_type(JSON:jFullWpnObj, iTargetCswType)
 			new iWpnIdx = ArrayGetCell(ary_iIdxOfTierAndType , iRndCellIdx);
 
 			jWpnEntry = json_array_get_value(jWpnOfType , iWpnIdx)
+			// Override the weapon damage multiplier with ZDamage : 
+			new Float:fZDmgMultiplier = json_object_get_real(jWpnEntry, JSON_Z_DMG_MULTIPLIER); 
+			json_object_set_real(jWpnEntry, JSON_DMG_MULTIPLIER, fZDmgMultiplier)
+
 			json_array_append_value(g_json_pickedWpn , jWpnEntry);
 		}
 	}
@@ -150,6 +154,10 @@ pick_pistol(JSON:jFullWpnObj , iTargetSubType)
 			new iWpnIdx = ArrayGetCell(ary_iIdxOfTierAndType , iRndCellIdx);
 
 			jWpnEntry = json_array_get_value(jWpnOfType , iWpnIdx)
+			// Override the weapon damage multiplier with ZDamage : 
+			new Float:fZDmgMultiplier = json_object_get_real(jWpnEntry, JSON_Z_DMG_MULTIPLIER); 
+			json_object_set_real(jWpnEntry, JSON_DMG_MULTIPLIER, fZDmgMultiplier)
+			
 			json_array_append_value(g_json_pickedWpn , jWpnEntry);
 		}
 	}
