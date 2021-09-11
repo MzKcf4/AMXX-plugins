@@ -110,7 +110,6 @@ public plugin_precache()
 	precache_generic(ZOMBIE_WIN_SOUND)
 	precache_generic(ZOMBIE_EVOLVE_SOUND)
 
-
 	var_func_load_z_params();
 	plugin_precache_ammopack();
 	plugin_precache_zombie_random_respawn();
@@ -202,11 +201,11 @@ public tick_progress()
 			if(g_iKillsInStage < get_pcvar_num(cvar_token_kills_per_stage))
 			{
 				if(Stock_is_between(g_iStageTimeRemain , 20 , 30))
-					set_lights("d")
+					set_lights("e")
 				else if(Stock_is_between(g_iStageTimeRemain , 10 , 20))
-					set_lights("c")
+					set_lights("d")
 				else if(Stock_is_between(g_iStageTimeRemain , 0 , 10))
-					set_lights("b")
+					set_lights("c")
 			}
 		}
 		else
@@ -294,7 +293,7 @@ stage_midnight_start()
 		}
 	}
 	set_dhudmessage(255 , 100 , 0 , -1.0 , 0.70 , 1 , .fxtime = 5.0, .holdtime = 5.0, .fadeintime = 1.0, .fadeouttime = 1.0)
-	show_dhudmessage(0, "Darkness...");
+	show_dhudmessage(0, "Zombies are enraged");
 }
 
 stage_midnight_end()
@@ -606,7 +605,11 @@ set_random_zombie_class(id)
 	set_user_health(id , floatround(fHealth))
 
 	if(g_iGameState == STATE_MIDNIGHT)
-		cs_set_player_maxspeed(id, floatround(ArrayGetCell(g_ZombieClassSpeed, iClassId) * 1.5))
+	{
+		new Float:fBaseSpeed = ArrayGetCell(g_ZombieClassSpeed, iClassId);
+		new Float:fNewSpeed = fBaseSpeed * 1.5;
+		cs_set_player_maxspeed(id, fNewSpeed);
+	}
 	else
 		cs_set_player_maxspeed(id, ArrayGetCell(g_ZombieClassSpeed, iClassId));
 
