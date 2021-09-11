@@ -40,7 +40,7 @@ PrimaryAttack_Pre_Balrog9(id , iEnt)
 	Stock_SetWeaponAnimation(id , iNextSlashSeq);
 	set_pev(iEnt, pev_iuser2 , iNextSlashSeq)	
 
-	new iHitResult = Stock_KnifeAttack(id, g_bIsZombieMode, BALROG9_SLASH_DIST, BALROG9_SLASH_DMG, _, _,_,1);
+	new iHitResult = Stock_KnifeAttack(id, is_extend_knife_dist(), BALROG9_SLASH_DIST, BALROG9_SLASH_DMG, _, _,_,1);
 	Util_PlayKnifeSoundByHitResult(id, iEnt, iHitResult , false)
 	rg_set_animation(id, PLAYER_ATTACK1)
 }
@@ -174,7 +174,7 @@ public charge_attack_balrog9(id , iEnt, bCharged)
 	else
 		Stock_SetWeaponAnimation(id , 11);
 
-	new iHitResult = Stock_KnifeAttack(id, g_bIsZombieMode, BALROG9_STAB_DIST, BALROG9_STAB_DMG, _, _,_,1);
+	new iHitResult = Stock_KnifeAttack(id, is_extend_knife_dist(), BALROG9_STAB_DIST, BALROG9_STAB_DMG, _, _,_,1);
 	Util_PlayKnifeSoundByHitResult(id, iEnt, iHitResult , false)
 	rg_set_animation(id, PLAYER_ATTACK1)
 

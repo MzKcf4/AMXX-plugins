@@ -28,7 +28,7 @@ public PrimaryAttack_Pre_Crow9(id, iEnt)
 	else
 		iHitResult = KnifeAttack2(id, TRUE, c_flDistance[iBteWpn][0], c_flAngle[iBteWpn][0], flDamage, _);
 	*/
-	new iHitResult = Stock_KnifeAttack(id ,g_bIsZombieMode , CROW9_SLASH_DIST, CROW9_SLASH_DMG, _,_,_,1)
+	new iHitResult = Stock_KnifeAttack(id ,is_extend_knife_dist() , CROW9_SLASH_DIST, CROW9_SLASH_DMG, _,_,_,1)
 	Util_PlayKnifeSoundByHitResult(id, iEnt, iHitResult , false)
 	Stock_SetWeaponNextAttacks(iEnt , 0.3 , 0.3, 0.3 + 3.0);
 	rg_set_animation(id, PLAYER_ATTACK1)
@@ -54,7 +54,7 @@ public SecondaryAttack_Pre_Crow9(id, iEnt)
 	Stock_SetWeaponAnimation(id , 4);
 	rg_set_animation(id, PLAYER_ATTACK1)
 
-	new iHitResult = Stock_KnifeAttack(id , g_bIsZombieMode, CROW9_STAB_DIST, CROW9_STAB_DMG, _,_,_,1)
+	new iHitResult = Stock_KnifeAttack(id , is_extend_knife_dist(), CROW9_STAB_DIST, CROW9_STAB_DMG, _,_,_,1)
 	Util_PlayKnifeSoundByHitResult(id, iEnt, iHitResult , false)
 	Stock_SetWeaponNextAttacks(iEnt , 2.0 , 2.0, 2.0 + 3.0);
 	
@@ -115,7 +115,7 @@ public Crow9_ChargeAttack(id, iEnt)
 	set_pev(iEnt, pev_iuser1, CROW9_NOT_CHARGED);
 	Stock_SetWeaponAnimation(id , 5);
 	rg_set_animation(id, PLAYER_ATTACK1)
-	new iHitResult = Stock_KnifeAttackWithAngle(id, g_bIsZombieMode, CROW9_STAB_CHARGED_DIST, CROW9_STAB_CHARGED_ANGLE,CROW9_STAB_CHARGED_DMG, 0.0);
+	new iHitResult = Stock_KnifeAttackWithAngle(id, is_extend_knife_dist(), CROW9_STAB_CHARGED_DIST, CROW9_STAB_CHARGED_ANGLE,CROW9_STAB_CHARGED_DMG, 0.0);
 	Util_PlayKnifeSoundByHitResult(id, iEnt, iHitResult , false)
 }
 

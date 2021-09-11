@@ -35,19 +35,8 @@ public slash_dragonsword(iEnt)
 		return;
 
 	rg_set_animation(iPlyId, PLAYER_ATTACK1)
-	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, g_bIsZombieMode, DRAGONSWORD_SLASH_DIST, DRAGONSWORD_SLASH_ANGLE, DRAGONSWORD_SLASH_DMG, 0.0);
+	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, is_extend_knife_dist(), DRAGONSWORD_SLASH_DIST, DRAGONSWORD_SLASH_ANGLE, DRAGONSWORD_SLASH_DMG, 0.0);
 	Util_PlayKnifeSoundByHitResult(iPlyId, iEnt, iHitResult , false)
-
-	// new Float:flDamage = (!IS_ZBMODE) ? c_flDamage[iBteWpn][0] : c_flDamageZB[iBteWpn][0];
-	/*
-	new iHitResult = KnifeAttack(id, FALSE, c_flDistance[iBteWpn][0], flDamage, _);
-
-	switch (iHitResult)
-	{
-		case RESULT_HIT_PLAYER : SendKnifeSound(id, 2, pev(iEnt, pev_iuser4));
-		case RESULT_HIT_WORLD : SendKnifeSound(id, 3, pev(iEnt, pev_iuser4));
-	}
-	*/
 }
 
 public stab_dragonsword(iEnt)
@@ -60,7 +49,7 @@ public stab_dragonsword(iEnt)
 		
 	rg_set_animation(iPlyId, PLAYER_ATTACK1)
 	Stock_SetWeaponAnimation(iPlyId , 5);
-	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, g_bIsZombieMode, DRAGONSWORD_STAB_DIST, DRAGONSWORD_STAB_ANGLE, DRAGONSWORD_STAB_DMG, 0.0);
+	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, is_extend_knife_dist(), DRAGONSWORD_STAB_DIST, DRAGONSWORD_STAB_ANGLE, DRAGONSWORD_STAB_DMG, 0.0);
 
 	Util_PlayKnifeSoundByHitResult(iPlyId, iEnt, iHitResult , false)
 }

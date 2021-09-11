@@ -35,7 +35,7 @@ public slash_runeblade(iEnt)
 		return;
 
 	rg_set_animation(iPlyId, PLAYER_ATTACK1)
-	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, g_bIsZombieMode, RUNEBLADE_SLASH_DIST, RUNEBLADE_SLASH_ANGLE, RUNEBLADE_SLASH_DMG, 0.0);
+	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, is_extend_knife_dist(), RUNEBLADE_SLASH_DIST, RUNEBLADE_SLASH_ANGLE, RUNEBLADE_SLASH_DMG, 0.0);
 	Util_PlayKnifeSoundByHitResult(iPlyId, iEnt, iHitResult , false)
 }
 
@@ -76,7 +76,7 @@ public check_charge_runeblade(iEnt)
 	else
 	{
 		set_pev(iEnt, pev_iuser1, RUNEBLADE_NOT_CHARGED);
-		new iHitResult = Stock_KnifeAttackWithAngle(id, g_bIsZombieMode, RUNEBLADE_STAB_DIST, RUNEBLADE_STAB_ANGLE, RUNEBLADE_STAB_DMG, 0.0);
+		new iHitResult = Stock_KnifeAttackWithAngle(id, is_extend_knife_dist(), RUNEBLADE_STAB_DIST, RUNEBLADE_STAB_ANGLE, RUNEBLADE_STAB_DMG, 0.0);
 		Util_PlayKnifeSoundByHitResult(id, iEnt, iHitResult , false)
 		rg_set_animation(id, PLAYER_ATTACK1)
 	}
@@ -161,7 +161,7 @@ public charge_attack_incomplete_runeblade(id, iEnt)
 
 
 	rg_set_animation(id, PLAYER_ATTACK1)
-	new iHitResult = Stock_KnifeAttackWithAngle(id, g_bIsZombieMode, RUNEBLADE_STAB_DIST,RUNEBLADE_STAB_ANGLE, RUNEBLADE_STAB_DMG, 0.0);
+	new iHitResult = Stock_KnifeAttackWithAngle(id, is_extend_knife_dist(), RUNEBLADE_STAB_DIST,RUNEBLADE_STAB_ANGLE, RUNEBLADE_STAB_DMG, 0.0);
 	Util_PlayKnifeSoundByHitResult(id, iEnt, iHitResult , false)
 }
 
@@ -182,7 +182,7 @@ public do_charge_attack_complete_runeblade(iEnt)
 	SetThink(iEnt , "");
 
 	rg_set_animation(id, PLAYER_ATTACK1)
-	new iHitResult = Stock_KnifeAttackWithAngle(id, g_bIsZombieMode, RUNEBLADE_STAB_CHARGED_DIST,RUNEBLADE_STAB_ANGLE,RUNEBLADE_STAB_CHARGED_DMG, 0.0);
+	new iHitResult = Stock_KnifeAttackWithAngle(id, is_extend_knife_dist(), RUNEBLADE_STAB_CHARGED_DIST,RUNEBLADE_STAB_ANGLE,RUNEBLADE_STAB_CHARGED_DMG, 0.0);
 
 	Util_PlayKnifeSoundByHitResult(id, iEnt, iHitResult , false)
 }

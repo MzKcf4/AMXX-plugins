@@ -1,9 +1,5 @@
 // Uncomment to enable special wpn logic
-// #define _ENABLE_SPECIAL_WPN
-#if defined _ENABLE_SPECIAL_WPN
-#include <reapi>
-#endif
-
+#define _ENABLE_SPECIAL_WPN
 #include <amxmodx>
 #include <amxmisc>
 #include <engine>
@@ -17,6 +13,9 @@
 #include <stripweapons>
 #include <cs_ham_bots_api>
 #include <json>
+#if defined _ENABLE_SPECIAL_WPN
+#include <reapi>
+#endif
 #include <customwpn_json_const>
 #include <customwpn_const>
 #include "customwpn_core/customwpn_core_var_func.sma"
@@ -31,9 +30,6 @@
 
 // ToDo: 
 // read pcvar from config
-
-new pcvar_wpnFree;
-new pcvar_wpnCanBuy;
 
 public plugin_precache()
 {
@@ -126,6 +122,7 @@ public plugin_init() {
 	
 	pcvar_wpnFree = register_cvar("wpn_free" , "0")
 	pcvar_wpnCanBuy = register_cvar("wpn_can_buy" , "1")
+	pcvar_wpnExtendKnifeDist = register_cvar("wpn_ext_knife" , "0");
 }
 
 //======
@@ -574,7 +571,6 @@ public plugin_natives()
 	register_native("api_core_get_owned_wpnId", "native_core_get_owned_wpnId")
 	register_native("api_core_is_weapon_wpn", "native_core_is_weapon_wpn")
 }
-
 
 public native_core_get_random_wpnid(plugin_id, num_params)
 {

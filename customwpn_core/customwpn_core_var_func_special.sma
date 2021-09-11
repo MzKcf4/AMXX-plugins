@@ -1,25 +1,3 @@
-#define LINUX_OFFSET 		4
-#define m_pPlayer		41
-#define m_iId			43
-#define m_fKnown		44
-#define m_flNextPrimaryAttack	46
-#define m_flNextSecondaryAttack	47
-#define m_flTimeWeaponIdle	48
-#define m_iPrimaryAmmoType	49
-#define m_iClip			51
-#define m_fInReload	 	54		// Are we in the middle of a reload ?
-#define m_fInSpecialReload      55		// Middle of Shotgun reload
-#define m_flAccuracy            62		
-#define m_iShotsFired 	64
-#define m_fWeaponState		74
-#define m_flNextAttack		83
-
-new g_iAllocString_infoTarget;
-new g_iAllocString_envSprite;
-
-// ============ Some constants ================= //
-new Float:g_vecZero[3]={0.0,0.0,0.0}
-
 enum _:ENTITY_CLASS (+=100)
 {
 	ENTCLASS_NADE=2000,
@@ -95,6 +73,11 @@ Util_PlayKnifeSoundByHitResult(id,iEnt,iHitResult,bStab)
 		}
 		return;
 	}
+}
+
+bool:is_extend_knife_dist()
+{
+	return get_pcvar_bool(pcvar_wpnExtendKnifeDist);
 }
 
 // Knife radius stocks are from BTE-AMXX : https://github.com/MoeMod/BTE-AMXX

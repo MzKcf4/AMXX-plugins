@@ -1,7 +1,3 @@
-#if defined _ENABLE_SPECIAL_WPN
-#include "customwpn_core/customwpn_core_var_func_special.sma"
-#endif
-
 // #define NO_WPN_OWNED -1
 new const NO_WPN_OWNED = -1
 
@@ -103,6 +99,10 @@ new const g_szWbox_model[] = "models/w_weaponbox.mdl"
 new const g_szWbox_model_prefix[] = "models/w_"
 
 new g_SmokePuff_SprId;
+
+new pcvar_wpnFree;
+new pcvar_wpnCanBuy;
+new pcvar_wpnExtendKnifeDist;
 
 // --- The args  [id][arg] --- //
 new g_iImpulse[GLOBAL_MAX_WPN]						// 7 digit unique impulse id
@@ -326,3 +326,7 @@ stock fm_get_weapon_ent_owner(ent)
 	
 	return get_pdata_cbase(ent, OFFSET_WEAPON_OWNER, OFFSET_LINUX_WEAPONS);
 }
+
+#if defined _ENABLE_SPECIAL_WPN
+#include "customwpn_core/customwpn_core_var_func_special.sma"
+#endif
