@@ -35,6 +35,7 @@ enum _:TOTAL_TRAITS{
 	ID_ADRENALINE = 0,
 	ID_BOXER,
 	ID_DEMOLITION,
+	ID_FROZEN_SKIN,
 	ID_GLASS_CANNON,
 	ID_GUNNER,
 	ID_HEADHUNTER,
@@ -63,7 +64,7 @@ new g_iTraitCooldown[33][TOTAL_TRAITS];
 // For resetting in TakeDamage_Post
 new bool:g_bPierced[33];
 
-new bool:g_bStumbled[33];
+new bool:g_bFrozen[33];
 // For ExplosiveShot
 new g_iHitBeforeExplosive[33];
 
@@ -99,6 +100,7 @@ initTraits()
 	g_szTraitName[ID_ADRENALINE] = "Adrenaline"
 	g_szTraitName[ID_BOXER] = "Boxer"
 	g_szTraitName[ID_DEMOLITION] = "Demolition"
+	g_szTraitName[ID_FROZEN_SKIN] = "Frozen Skin"
 	g_szTraitName[ID_GLASS_CANNON] = "Glass Cannon"
 	g_szTraitName[ID_GUNNER] = "Gunner"
 	g_szTraitName[ID_HAWKEYE] = "Hawk Eye"
@@ -114,17 +116,18 @@ initTraits()
 	g_szTraitDesc[ID_ADRENALINE] = "+1.5% damage per 2% lost health"
 	g_szTraitDesc[ID_BOXER] = "+10%*[Tier] melee damage"
 	g_szTraitDesc[ID_DEMOLITION] = "Every 5 hits , next hit deals 30*[Tier] explosive damage"
+	g_szTraitDesc[ID_FROZEN_SKIN] = "50% to freeze the attacker for 1.5 seconds upon taking damage"
 	g_szTraitDesc[ID_GLASS_CANNON] = "+25% damage , +50% incoming damage"
 	g_szTraitDesc[ID_GUNNER] = "+5%*[Tier] gun damage , -5%*[Tier] recoil"
 	g_szTraitDesc[ID_OVERLOAD] = "When overflow damage > 300 , 50% is converted to explosive damage"
-	g_szTraitDesc[ID_PIERCING] = "Your attack penetrates armor"
+	g_szTraitDesc[ID_PIERCING] = "Your attack penetrates armor ; + 15% damage to enemy without armor"
 	g_szTraitDesc[ID_STEADY_AIM] = "You shoot accurately when jumping / moving"
 	g_szTraitDesc[ID_HAWKEYE] = "[BS only] Next shot must headshot (10s CD); -2s CD per hit"
 	g_szTraitDesc[ID_HEADHUNTER] = "+20% headshot damage"
 	g_szTraitDesc[ID_SAFEGUARD] = "Gain 5 seconds invincibility upon taking fatal damage"		// Maybe +atk ?
 	g_szTraitDesc[ID_STUMBLING_BLOCK] = "Shots have 10% (33% for leg hits) chance to immobilize enemy for 1.5 seconds"
 	g_szTraitDesc[ID_TOUGHNESS] =	"-6%*[Tier] incoming damage, 3%*[Tier] chance blocks attack"
-	g_szTraitDesc[ID_VAMPIRE] = "Heals 10 hp on kills ; or 5 hp when enemies killed near you"
+	g_szTraitDesc[ID_VAMPIRE] = "Heals 10 hp on kills ; or 5 hp when enemies killed nearby"
 }
 
 round_start_post_human_trait()
@@ -260,7 +263,7 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 		static hitResult; hitResult = get_tr2(Traceresult, TR_iHitgroup);
 		if(random_num(1, 100) < 11 || ((hitResult == HIT_LEFTLEG || hitResult == HIT_RIGHTLEG) && random_num(1, 100) < 33))	
 		{
-			g_bStumbled[Victim] = true;
+			g_bFrozen[Victim] = true;
 			fm_set_rendering(Victim,kRenderFxGlowShell,255,255,255,kRenderNormal,8);
 			remove_task(Victim + TASKID_REMOVE_STUMBLING_BLOCK);
 			set_task(DURATION_STUMBLING_BLOCK, "remove_stumbling_block", Victim + TASKID_REMOVE_STUMBLING_BLOCK);
@@ -302,10 +305,17 @@ Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage
 		return 0.0;
 	}
 	// ==Piercing ==//
-	if(g_hasTrait[Attacker][ID_PIERCING] && get_user_armor(Victim) > 0)
+	if(g_hasTrait[Attacker][ID_PIERCING])
 	{
-		set_pdata_int(Victim, m_iKevlar, 0)
-		g_bPierced[Victim] = true;
+		if(get_user_armor(Victim) > 0)
+		{
+			set_pdata_int(Victim, m_iKevlar, 0)
+			g_bPierced[Victim] = true;			
+		}
+		else
+		{
+			dmg *= 1.15;
+		}
 	}
 	// ==Overload== //
 	if(g_hasTrait[Attacker][ID_OVERLOAD])
@@ -321,6 +331,14 @@ Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage
 			fDiff *= 0.5;
 			doRadiusDamage(Attacker, fOrigin, true, EXPLOSIVE_SHOT_RADIUS*1.5 , fDiff)
 		}
+	}
+	// ==Frozen Skin== //
+	if(g_hasTrait[Victim][ID_FROZEN_SKIN] && random_num(1, 100) < 50)
+	{
+		g_bFrozen[Victim] = true;
+		fm_set_rendering(Victim,kRenderFxGlowShell,255,255,255,kRenderNormal,8);
+		remove_task(Victim + TASKID_REMOVE_STUMBLING_BLOCK);
+		set_task(DURATION_STUMBLING_BLOCK, "remove_stumbling_block", Victim + TASKID_REMOVE_STUMBLING_BLOCK);
 	}
 	return dmg;
 }
@@ -353,7 +371,7 @@ public fw_PlayerPreThink(id)
 	if (!is_user_alive(id))
 		return FMRES_IGNORED
 
-	if(g_bStumbled[id])
+	if(g_bFrozen[id])
 	{
 		static Float:fFrozenVec[3];
 		fFrozenVec[0] = 0.0
@@ -376,7 +394,7 @@ public remove_godmode(taskid)
 public remove_stumbling_block(taskid)
 {
 	new id = taskid - TASKID_REMOVE_STUMBLING_BLOCK;
-	g_bStumbled[id] = false;
+	g_bFrozen[id] = false;
 	fm_set_rendering(id); // reset back to normal
 }
 
@@ -502,7 +520,7 @@ show_menu_human_trait(id)
 	formatex(szTitle, charsmax(szTitle), "\r Tokens : [%i]" , g_iToken[id])
 	new menu = menu_create(szTitle, "menu_human_trait_handler" );
 
-	static szDisplay[192];
+	static szDisplay[512];
 	static szTraitId[3];
 	static traitId;
 	new Array:upgradable = get_upgradable_traitId(id);
