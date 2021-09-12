@@ -24,7 +24,7 @@ precache_special()
 // 1st step : This blocks client from sending their weapon ATTACK info
 public fw_UpdateClientData_Post(playerId, sendweapons, cd_handle)
 {
-	if(!is_alive(playerId)){
+	if(!is_user_alive(playerId)){
 	 	return FMRES_IGNORED
 	}
 		
@@ -46,7 +46,7 @@ public fw_UpdateClientData_Post(playerId, sendweapons, cd_handle)
 //  2.4 then emit the custom sound
 public fw_PlaybackEvent(flags, invoker, eventid, Float:delay, Float:origin[3], Float:angles[3], Float:fparam1, Float:fparam2, iParam1, iParam2, bParam1, bParam2)
 {
-	if (!is_connected(invoker))
+	if (!is_user_connected(invoker))
 		return FMRES_IGNORED;
 		
 	static cswId; cswId = get_player_weapon(invoker);
@@ -90,36 +90,13 @@ public fw_PlaybackEvent(flags, invoker, eventid, Float:delay, Float:origin[3], F
 	return FMRES_SUPERCEDE
 }
 
-// 3rd step :
-// This event fires when ammo updates in HUD , so it can be used to track when player firing weapons
-public Event_CurWeapon(playerId)
-{
-	/*
-	static cswId; cswId = read_data(2)
-	
-	static ownedWpnId; ownedWpnId = Get_Owned_Wpn_By_CSW(cswId , playerId);
-	if(ownedWpnId == -1)	
-		return PLUGIN_CONTINUE;
-	
-	if(g_fWpnShootDelay[ownedWpnId] <= 0)
-		return PLUGIN_CONTINUE;
-	
-	static Ent; Ent = fm_get_user_weapon_entity(playerId, cswId)
-	if(!pev_valid(Ent)) 
-		return PLUGIN_CONTINUE;
-
-	set_pdata_float(Ent, m_flNextPrimaryAttack, g_fWpnShootDelay[ownedWpnId], LINUX_OFFSET)
-	*/
-	return PLUGIN_CONTINUE;
-}
-
 // =================== 4th step , what did the player hit? ================
 
 // 4.1 : Hit the world
 // 4.1.1 : Make the bulletHole & BulletSmoke
 public fw_TraceAttack_World(Victim, Attacker, Float:Damage, Float:Direction[3], Ptr, DamageBits)
 {
-	if(!is_connected(Attacker))
+	if(!is_user_connected(Attacker))
 		return HAM_IGNORED
 		
 	static cswId; cswId = get_user_weapon(Attacker)
@@ -150,7 +127,7 @@ public fw_TraceAttack_Player(Victim, Attacker, Float:Damage, Float:Direction[3],
 	static name[32];
 	get_user_name(Victim, name, charsmax(name));
 	// console_print(0 , "[TraceAttack_Player] V:%s , A:%i , Damage %f" , name , Attacker , Damage);
-	if(!is_connected(Attacker))
+	if(!is_user_connected(Attacker))
 		return HAM_IGNORED
 		
 	static cswId; cswId = get_user_weapon(Attacker)

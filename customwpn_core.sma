@@ -22,8 +22,6 @@
 #include "customwpn_core/customwpn_core_precacher.sma"
 #include "customwpn_core/customwpn_core_hooks.sma"
 
-#pragma dynamic 10240
-
 #define PLUGIN "Custom Wpn - Core"
 #define VERSION "1.0"
 #define AUTHOR "MzKc"
@@ -50,13 +48,6 @@ public plugin_init() {
 
 	// === Safety ===
 	register_event("CurWeapon", "Safety_CurWeapon", "be", "1=1")
-	RegisterHam(Ham_Spawn, "player", "fw_Safety_Spawn_Post", 1)
-	RegisterHam(Ham_Killed, "player", "fw_Safety_Killed_Post", 1)
-	RegisterHamBots(Ham_Spawn, "fw_Safety_Spawn_Post", 1)
-	RegisterHamBots(Ham_Killed, "fw_Safety_Killed_Post", 1)
-	
-	// Shooting speed
-	register_event("CurWeapon", "Event_CurWeapon", "be", "1=1")
 
 	// Bullet holes
 	RegisterHam(Ham_TraceAttack, "worldspawn", "fw_TraceAttack_World");
@@ -333,7 +324,6 @@ public CmdGiveWpn(playerId, wpnid)
 		ham_strip_user_weapon(playerId , CSW_KNIFE)
 	}
 	
-	console_print(0, "[WpnCore] giving player wpnId %i" , wpnid);
 	// Sets which player (bit) owns the modified gun
 	Set_BitVar(g_HadWpn[wpnid], playerId)
 
@@ -456,69 +446,32 @@ public WpnMenu_Handler( id, menu, item )
 /* ===============================
 ------------- SAFETY -------------
 =================================*/
+
 public Safety_Connected(id)
 {
 	reset_player_wpn(id)
-	Set_BitVar(g_IsConnected, id)
-	UnSet_BitVar(g_IsAlive, id)
 	g_PlayerWeapon[id] = 0
 }
 
 public Safety_Disconnected(id)
 {
 	reset_player_wpn(id)
-	UnSet_BitVar(g_IsConnected, id)
-	UnSet_BitVar(g_IsAlive, id)
 	g_PlayerWeapon[id] = 0
 }
 
 public Safety_CurWeapon(id)
 {
-	if(!is_alive(id))
+	if(!is_user_alive(id))
 		return
 		
 	static CSW; CSW = read_data(2)
 	if(g_PlayerWeapon[id] != CSW) g_PlayerWeapon[id] = CSW
 }
 
-public fw_Safety_Spawn_Post(id)
-{
-	if(!is_user_alive(id))
-		return
-		
-	Set_BitVar(g_IsAlive, id)
-}
-
-public fw_Safety_Killed_Post(id)
-{
-	UnSet_BitVar(g_IsAlive, id)
-}
-
-public is_alive(id)
-{
-	if(!(1 <= id <= 32))
-		return 0
-	if(!Get_BitVar(g_IsConnected, id))
-		return 0
-	if(!Get_BitVar(g_IsAlive, id)) 
-		return 0
-	
-	return 1
-}
-
-public is_connected(id)
-{
-	if(!(1 <= id <= 32))
-		return 0
-	if(!Get_BitVar(g_IsConnected, id))
-		return 0
-	
-	return 1
-}
-
 public get_player_weapon(id)
 {
-	if(!is_alive(id))
+	// Replace with fakemeta function?
+	if(!is_user_alive(id))
 		return 0
 	
 	return g_PlayerWeapon[id]

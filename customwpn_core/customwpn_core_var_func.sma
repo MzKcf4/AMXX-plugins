@@ -154,7 +154,7 @@ new Float:g_fPushAngle[MAX_PLAYERS + 1][3];	// The current recoil angle of the w
 new g_iPlayerWpnClip[33];						// The clip info used for reloading of each player's wpn
 
 // Safety
-new g_IsConnected, g_IsAlive , g_PlayerWeapon[33]	// PlayerId ranges from 1 to 32.
+new g_PlayerWeapon[33]	// PlayerId ranges from 1 to 32.
 
 new g_MsgWeaponList;
 
