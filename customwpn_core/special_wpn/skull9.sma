@@ -32,18 +32,13 @@ public slash_skull9(iEnt)
 		return;
 
 	rg_set_animation(iPlyId, PLAYER_ATTACK1)
-	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, TRUE, SKULL9_SLASH_DIST, SKULL9_SLASH_ANGLE, SKULL9_DMG, 0.0);
+	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, is_extend_knife_dist(), SKULL9_SLASH_DIST, SKULL9_SLASH_ANGLE, SKULL9_DMG, 0.0);
 	if(iHitResult == RESULT_HIT_NONE)
 		Stock_SetWeaponAnimation(iPlyId , 4);
 	else
 		Stock_SetWeaponAnimation(iPlyId , 3);
 
 	Util_PlayKnifeSoundByHitResult(iPlyId, iEnt, iHitResult , false)
-
-	// new Float:flDamage = (!IS_ZBMODE) ? c_flDamage[iBteWpn][0] : c_flDamageZB[iBteWpn][0];
-	/*
-	new iHitResult = KnifeAttack(id, FALSE, c_flDistance[iBteWpn][0], flDamage, _);
-	*/
 }
 
 public stab_skull9(iEnt)
@@ -55,7 +50,7 @@ public stab_skull9(iEnt)
 		return;
 		
 	rg_set_animation(iPlyId, PLAYER_ATTACK1)
-	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, TRUE, SKULL9_STAB_DIST, SKULL9_STAB_ANGLE, SKULL9_DMG, 0.0);
+	new iHitResult = Stock_KnifeAttackWithAngle(iPlyId, is_extend_knife_dist(), SKULL9_STAB_DIST, SKULL9_STAB_ANGLE, SKULL9_DMG, 0.0);
 
 	Util_PlayKnifeSoundByHitResult(iPlyId, iEnt, iHitResult , false)
 }

@@ -115,7 +115,6 @@ public fw_TraceAttack_World(Victim, Attacker, Float:Damage, Float:Direction[3], 
 	Make_BulletHole(Attacker, flEnd, Damage)
 	Make_BulletSmoke(Attacker, Ptr)
 
-	// SetHamParamFloat(3, float(TEMP_DMG))
 	return HAM_HANDLED
 }
 
@@ -123,10 +122,8 @@ public fw_TraceAttack_World(Victim, Attacker, Float:Damage, Float:Direction[3], 
 // 4.2 Hit the player
 public fw_TraceAttack_Player(Victim, Attacker, Float:Damage, Float:Direction[3], Ptr, DamageBits)
 {
-
 	static name[32];
 	get_user_name(Victim, name, charsmax(name));
-	// console_print(0 , "[TraceAttack_Player] V:%s , A:%i , Damage %f" , name , Attacker , Damage);
 	if(!is_user_connected(Attacker))
 		return HAM_IGNORED
 		
@@ -136,15 +133,6 @@ public fw_TraceAttack_Player(Victim, Attacker, Float:Damage, Float:Direction[3],
 		return HAM_IGNORED
 	
 	static Float:dmg; dmg = Damage;
-	// Note for Zombie mode : can override the fWpnDmgMultiplier in loader so that it will use Z mode multipler
-	/*
-	if(g_bIsZombieMode && g_fWpnDmgMultiplierZ[ownedWpnId] > 0)
-	{
-		dmg = Damage * g_fWpnDmgMultiplierZ[ownedWpnId];
-		SetHamParamFloat(3, dmg)
-		return HAM_HANDLED
-	}
-	*/
 	
 	if(g_fWpnDmgMultiplier[ownedWpnId] <= -1.0)
 		return HAM_IGNORED
@@ -155,21 +143,13 @@ public fw_TraceAttack_Player(Victim, Attacker, Float:Damage, Float:Direction[3],
 	return HAM_HANDLED
 }
 
-
-
-
-/// ========================================================================================
-
-
-
 // Called when player switchs (deploys) to that weapon
 public HamF_Item_Deploy_Post(ent)
 {
 	static entOwnerId , cswId, wpnId;
-	// https://wiki.alliedmods.net/CBasePlayerItem_(CS)  for  what "41" & "43" means
-	entOwnerId = get_pdata_cbase(ent, 41, 4);
+	entOwnerId = get_pdata_cbase(ent, m_pPlayer, 4);
 	// 43's type is "int" , not CBaseXXXX , so use pdata_int
-	cswId = get_pdata_int(ent, 43, 4);
+	cswId = get_pdata_int(ent, m_iId, 4);
 	
 	wpnId = Get_Owned_Wpn_By_CSW(cswId , entOwnerId);
 	if(wpnId == NO_WPN_OWNED)
@@ -182,7 +162,6 @@ public HamF_Item_Deploy_Post(ent)
 
 	// When pick up or switch to wpn with state , re-record the state of that weapon
 	g_WpnState[entOwnerId][wpnId] = iWpnState;
-	// 	console_print(0 , "Wpn %i is deployed , name %s , ammoid %i , itemInSlot %i , cswId %i" , wpnId , g_szWpnId[wpnId], g_PAMMO_ID[cswId], g_ITEM_IN_SLOT[cswId], g_iWpnCswId[wpnId]);
 	if(g_iWpnDrawSeqId[wpnId] >= 0)
 	{
 		Set_WeaponAnim(entOwnerId, g_iWpnDrawSeqId[wpnId]);
@@ -216,11 +195,9 @@ public HamF_Item_AddToPlayer_Post(const item, const player)
 		}
 	}
 	
-	
 	// The gun is Not pick up by player., so it is purchased.
 	static  cswId, wpnId;
-	// 43's type is "int" , not CBaseXXXX , so use pdata_int
-	cswId = get_pdata_int(item, 43, 4);
+	cswId = get_pdata_int(item, m_iId, 4);
 	
 	wpnId = Get_Owned_Wpn_By_CSW(cswId , player);
 	if(wpnId == NO_WPN_OWNED)
@@ -238,7 +215,6 @@ public HamF_Item_AddToPlayer_Post(const item, const player)
 	write_byte( 0 );                    	// Flags
 	message_end();
 
-	// console_print(0 , "Wpn %i is deployed , name %s , ammoid %i , itemInSlot %i , cswId %i" , wpnId , g_szWpnId[wpnId], g_PAMMO_ID[cswId], g_ITEM_IN_SLOT[cswId], g_iWpnCswId[wpnId]);
 	return HAM_HANDLED;
 }
 
@@ -405,7 +381,7 @@ public HamF_Weapon_PrimaryAttack(ent)
 	return HAM_IGNORED
 }
 
-// =============== Recoil control ===================== //
+// =============== Recoil control and Shoot Speed===================== //
 public HamF_Weapon_PrimaryAttack_Post(ent)
 {
 	static ownerId; ownerId = pev(ent, pev_owner)
@@ -438,6 +414,26 @@ public HamF_Weapon_PrimaryAttack_Post(ent)
 	// ============================================== //
 
 	return HAM_IGNORED
+}
+
+
+// Weapon that has secondary action
+// https://forums.alliedmods.net/showthread.php?t=199103
+public HamF_Weapon_SecondaryAttack_Post(ent)
+{
+	static entOwnerId , cswId, wpnId;
+	entOwnerId = get_pdata_cbase(ent, m_pPlayer, 4);
+	cswId = get_pdata_int(ent, m_iId, 4);
+	
+	wpnId = Get_Owned_Wpn_By_CSW(cswId , entOwnerId);
+	if(wpnId == NO_WPN_OWNED)
+		return HAM_IGNORED;
+		
+	static iWpnState; iWpnState = get_pdata_int(ent , m_fWeaponState , 4);
+
+	g_WpnState[entOwnerId][wpnId] = iWpnState;
+	
+	return HAM_HANDLED;
 }
 
 // Tracks reload animtaion & correctly set the clip after reload
@@ -482,8 +478,103 @@ public HamF_Item_PostFrame(ent)
 	return HAM_IGNORED
 }
 
+// =========================== Weapon dropping ============================================ //
+public fw_SetModel(ent , const model[])
+{    
+	if (!pev_valid(ent) || !equali(model, g_szWbox_model_prefix, sizeof g_szWbox_model_prefix - 1) || equali(model, g_szWbox_model))
+		return FMRES_IGNORED
+	
+	// Checks if the ent is a dropped weapon
+	// When dropping a weapon, the entity is linked to a weaponbox entity.
+	static Classname[32]
+	pev(ent, pev_classname, Classname, sizeof(Classname))
+	if(!equal(Classname, "weaponbox"))
+		return FMRES_IGNORED
+	
+	// Who drop this?
+	static playerId; playerId = pev(ent , pev_owner);
+	if( playerId < 0  || playerId > 33)
+		return FMRES_IGNORED
+	
+	// So now we know a playerId dropped a WeaponBox entity with model set to "w_xxxxx"
+	// Now check all wpn that replace that w_ weapon , see if player drops a wpn weapon or just an original weapon
+	
+	for(new i = 0 ; i < g_iWpnCount ; i++)
+	{
+		static replacedMdl[32]
+		// models/w_xxx.mdl
+		formatex(replacedMdl , charsmax(replacedMdl) , "%s%s%s%s" , MDL_PREFIX_DEFAULT, MDL_W_PREFIX, MDL_DEFAULT[g_iWpnCswId[i]] , MDL_EXT)
+		
+		// This is a model replaced by Wpn AND player own this wpnid 
+		if( equali(model , replacedMdl)  &&  Get_BitVar(g_HadWpn[i] , playerId))
+		{
+			static weapon; weapon = find_ent_by_owner(-1, g_szWpnIdOld[i], ent)
+			if(!pev_valid(weapon))
+				return FMRES_IGNORED;
+			
+			set_pev(weapon, pev_impulse, g_iImpulse[i])
+			engfunc(EngFunc_SetModel, ent, g_szModel_W[i])
+			DropWpn(i , playerId)
+			//console_print(0, "Model set for : %s ; owner = %i ", model , playerId)
+			return FMRES_SUPERCEDE
+		}
+	}
+	return FMRES_IGNORED;
+}
 
 // ================================== Knife =====================================
+// =========== Knife emit sound ================= //
+public fw_EmitSound(id, channel, sample[], Float:volume, Float:attn, flag, pitch)
+{
+	if(!is_user_connected(id))
+		return FMRES_IGNORED;
+
+	// weapons/knife_ hit1/2/3/4  ;  hitwall1  ; slash1/2 , stab
+	if (sample[0] == 'w' && sample[1] == 'e' && sample[8] == 'k' && sample[9] == 'n')
+	{
+		static iWpnId; iWpnId = Get_Owned_Wpn_By_CSW(CSW_KNIFE , id);
+		if(iWpnId == -1)	
+			return FMRES_IGNORED;
+
+		switch(sample[17])
+		{
+			//case 'l':		dep[l]oy1
+			//	return FMRES_SUPERCEDE;
+
+			case 's':	// sla[s]h1
+			{
+				if(strlen(g_szKnifeSlashSound[iWpnId]) > 0){
+					emit_sound(id, CHAN_WEAPON, g_szKnifeSlashSound[iWpnId], volume, attn, flag, pitch);
+					return FMRES_SUPERCEDE;				
+				}
+			}
+			case 'w':	// hit[w]all1
+			{
+				if(strlen(g_szKnifeHitWallSound[iWpnId]) > 0){
+					emit_sound(id, CHAN_WEAPON, g_szKnifeHitWallSound[iWpnId], volume, attn, flag, pitch);
+					return FMRES_SUPERCEDE;
+				}
+			}
+			case 'b':  // sta[b]
+			{
+				if(strlen(g_szKnifeStabSound[iWpnId]) > 0){
+					emit_sound(id, CHAN_WEAPON, g_szKnifeStabSound[iWpnId], volume, attn, flag, pitch);
+					return FMRES_SUPERCEDE;
+				}
+			}
+			case '1', '2', '3', '4':	// hit[1]
+			{
+				if(strlen(g_szKnifeHitSound[iWpnId]) > 0){
+					emit_sound(id, CHAN_WEAPON, g_szKnifeHitSound[iWpnId], volume, attn, flag, pitch);
+					return FMRES_SUPERCEDE;
+				}
+			}
+		}
+	}
+	return FMRES_IGNORED;
+}
+
+
 public HamF_Knife_PostFrame(ent)
 {
 	#if defined _ENABLE_SPECIAL_WPN

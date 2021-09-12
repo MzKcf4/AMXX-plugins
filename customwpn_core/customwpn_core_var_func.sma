@@ -55,6 +55,7 @@ new const MDL_DEFAULT[][] = {"thighpack", "p228", "shield", "scout", "hegrenade"
 new const g_ITEM_IN_SLOT[] = {-1, 3, -1, 9,1,12,3,13,14,3,5,6,15,16,17,18,4,2,2,7,4,5,6,11,3,2,1,10,1,1,8}
 new const g_SLOT[] = {-1 , 1 , -1 , 0 , 3 , 0 , 4 , 0 , 0 , 3 , 1 , 1 , 0 , 0 , 0 , 0 ,1 , 1 , 0 , 0 ,0 , 0 , 0 , 0 ,0 , 3 , 1 , 0 ,0 , 2 , 0}
 
+/*
 #define PAMMO_ID_338 1
 #define PAMMO_ID_762 2
 #define PAMMO_ID_556_NATO 3
@@ -64,26 +65,11 @@ new const g_SLOT[] = {-1 , 1 , -1 , 0 , 3 , 0 , 4 , 0 , 0 , 3 , 1 , 1 , 0 , 0 , 
 #define PAMMO_ID_57 7
 #define PAMMO_ID_357 9
 #define PAMMO_ID_9 10
+*/
 
 new const g_PAMMO_ID[] = {
 	-1 , 9, -1,  2, 12, 5, 14, 6, 4 , 13 , 10 , 7 , 6 , 4 , 4 , 4 ,
 	6, 10,1,10,3,5,4,10,2,11,8,4,2,-1,7}
-
-// Offsets
-const OFFSET_USE_STOPPED 			= 0;
-const OFFSET_PDATA					= 2;
-const OFFSET_LINUX_WEAPONS 			= 4;
-const OFFSET_LINUX		 			= 5;
-const OFFSET_WEAPON_OWNER			= 41;
-const OFFSET_ID						= 43;
-const OFFSET_NEXT_PRIMARY_ATTACK	= 46;
-const OFFSET_NEXT_SECONDARY_ATTACK 	= 47;
-const OFFSET_TIME_WEAPON_IDLE 		= 48;
-const OFFSET_IN_RELOAD 				= 54;
-const OFFSET_IN_SPECIAL_RELOAD 		= 55;
-const OFFSET_NEXT_ATTACK			= 83;
-const OFFSET_FOV					= 363;
-const OFFSET_ACTIVE_ITEM 			= 373;
 
 enum ( <<=1 )
 {
