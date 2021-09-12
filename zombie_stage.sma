@@ -214,12 +214,15 @@ public tick_progress()
 			{
 				stage_midnight_start();
 			}
+			else if (g_iCurrStage == MAX_STAGE)
+			{
+				Game_End();
+			}
 			else
 			{
 				Stage_End();
 				Rest_Start();
 			}
-
 		}
 	}
 	set_info_message();
@@ -227,6 +230,7 @@ public tick_progress()
 
 Rest_Start()
 {
+	set_lights("f")
 	g_iGameState = STATE_REST;
 	g_iRestTimeRemain = get_pcvar_num(cvar_rest_time)
 	new bool:bEnoughKills = g_iKillsInStage >= get_pcvar_num(cvar_token_kills_per_stage);
@@ -314,6 +318,11 @@ Stage_End()
 	}
 	g_iCurrStage++;
 	// ToDo: Point to token conversion
+}
+
+Game_End()
+{
+	round_end(WINNER_HUMAN);	
 }
 
 public set_info_message()
@@ -576,6 +585,7 @@ public round_end(winner)
 		client_cmd(0 , "spk %s" , ZOMBIE_WIN_SOUND);
 	}
 	g_bModActive = false;
+	g_iGameState = STATE_STOP;
 }
 
 set_random_zombie_class(id)

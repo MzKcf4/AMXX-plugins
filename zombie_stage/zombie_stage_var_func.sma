@@ -26,14 +26,6 @@ enum _:TOTAL_FORWARDS
 new g_ForwardResult
 new g_Forwards[TOTAL_FORWARDS]
 
-// == Time vars == //
-// #define STAGE_1_PROGRESS 15
-
-#define STAGE_2_PROGRESS 20
-#define STAGE_3_PROGRESS 40
-#define STAGE_4_PROGRESS 60
-#define STAGE_5_PROGRESS 75
-
 #define STAGE_MULTIPLIER 1.2
 #define PROGRESS_TICK_INTERVAL 2
 
@@ -42,7 +34,8 @@ enum _:GAME_STATE
 	STATE_STOP = 0,
 	STATE_REST,
 	STATE_BATTLE,
-	STATE_MIDNIGHT
+	STATE_MIDNIGHT,
+	STATE_END
 }
 
 new g_iCurrStage = -1;
