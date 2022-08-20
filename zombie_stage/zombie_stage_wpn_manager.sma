@@ -8,10 +8,9 @@
 #define TIER_6 5
 #define TIER_7 6
 #define TIER_8 7
-#define TIER_MAX TIER_7
-#define NO_MORE_UPGRADE -1
+#define TIER_9 8
+#define TIER_MAX TIER_9
 
-#define MAX_WPN_PER_TIER 8
 #define NO_WPN -1
 
 // #define CLASS_NOT_SELECTED -1
@@ -77,9 +76,10 @@ prepareWpn()
 			}
 			/*
 			new szTemp[32]
-			wpn_core_get_wpn_display_name_2(iWpnId , szTemp);
+			api_core_get_wpn_display_name(iWpnId , szTemp);
 			console_print(0 , "%s added for Tier %i" , szTemp , iTier );
 			*/
+			
 		}
 		ArrayDestroy(wpnIds)
 	}
@@ -269,7 +269,7 @@ public show_menu_wpn_upgrade_secondary(id)
 	}
 	if(g_iPlayerWpnTierSecondary[id] >= g_iCurrStage)	return;
 	// Keep the difference 2. So even stage 5 can upgrade from 2 to 4.	( 5 - 2 = 3)
-	if(g_iCurrStage - g_iPlayerWpnTierSecondary[id] < 2)		return;
+	if(g_iCurrStage - g_iPlayerWpnTierSecondary[id] < 1)		return;
 
 	new iPlySubClass = g_iPlayerWpnSubClass[id];
 	new iPlyTier = g_iPlayerWpnTierSecondary[id];
@@ -296,7 +296,7 @@ public menu_wpn_upgrade_secondary_handler(id, menu, item)
     {
         case 0:
         {
-        	if(g_iToken[id] <= 1)
+        	if(g_iToken[id] < 1)
         	{
         		client_print( id, print_chat, "Not enough token" );
         		return PLUGIN_HANDLED;

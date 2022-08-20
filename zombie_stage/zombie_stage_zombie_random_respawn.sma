@@ -33,7 +33,7 @@ client_disconnected_zombie_random_spawn(id)
 
 Ham_Killed_Post_Zombie_Random_Spawn(id)
 {
-	if(g_iGameState == STATE_REST)
+	if(g_iGameState == STATE_REST || g_iGameState == STATE_STOP)
 		return;
 	begin_respawn(id)
 }

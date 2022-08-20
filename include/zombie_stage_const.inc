@@ -18,8 +18,8 @@ new const JSON_Z_SUBTYPE[] = "zsubtype";
 #define STAGE_6	6
 #define STAGE_7	7
 
-#define MAX_STAGE 7
-#define MAX_ZTIER 7
+#define MAX_STAGE 8
+#define MAX_ZTIER 8
 
 #define DO_NOT_HIDE 999
 

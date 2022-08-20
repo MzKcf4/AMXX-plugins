@@ -78,6 +78,7 @@ new Array:g_ZombieClassUsable;				// Stores the list of zombie class that is CUR
 new g_iPlayerZombieClass[MAX_PLAYERS + 1]	// zombie class of player , should set to -1 when dead.
 new g_iPlayerZombieClassPreKill[MAX_PLAYERS + 1] // For showing dmg , since it clears before TakeDmg_Post.
 new Float:g_fPlayerZombieKnockback[MAX_PLAYERS + 1]	// Individual knockback multiplier of zombie
+new g_iZombieMaxHealth[MAX_PLAYERS + 1]		
 
 // ========================
 new bool:g_bProgressEnd;

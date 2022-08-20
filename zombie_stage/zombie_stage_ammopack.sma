@@ -55,9 +55,9 @@ new g_iWpnAmmoSupply[] = {
 	0, 
 	39,				// "weapon_p228", 
 	0, 				// weapon_shield
-	10,				// "weapon_scout", 
+	5,				// "weapon_scout", 
 	0,				// weapon_hegrenade 
-	7,				// "weapon_xm1014", 
+	10,				// "weapon_xm1014", 
 	0,				// "weapon_c4"
 	50,				// "weapon_mac10", 
 	30,				// "weapon_aug", 
@@ -70,19 +70,19 @@ new g_iWpnAmmoSupply[] = {
 	30,				// "weapon_famas", 
 	50,				// "weapon_usp",
 	60,				// "weapon_glock18", 
-	10,				// "weapon_awp", 
+	5,				// "weapon_awp", 
 	60,				// "weapon_mp5navy", 
 	50,				// "weapon_m249", 
-	7,				// "weapon_m3", 
+	10,				// "weapon_m3", 
 	30,				// "weapon_m4a1", 
 	60,				// "weapon_tmp", 
 	20,				// "weapon_g3sg1", 
 	0,				// "weapon_flashbang", 
-	21,				// "weapon_deagle",
+	14,				// "weapon_deagle",
 	30,				// "weapon_sg552", 
 	30,				// "weapon_ak47", 
 	0,				// "weapon_knife", 
-	50,				// "weapon_p90", 
+	75,				// "weapon_p90", 
 	0
 }
 

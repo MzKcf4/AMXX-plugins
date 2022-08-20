@@ -42,6 +42,7 @@ new cvar_token_kills_per_stage;
 #define m_flNextPrimaryAttack	46
 #define m_flNextSecondaryAttack	47
 
+
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
@@ -70,12 +71,12 @@ public plugin_init()
 	g_Forwards[FW_ROUND_END_POST] = CreateMultiForward("zs_fw_core_round_end_post", ET_IGNORE)
 	g_Forwards[FW_ZOMBIE_KILLED_POST] = CreateMultiForward("zs_fw_core_zombie_killed_post", ET_IGNORE, FP_CELL)
 
-	cvar_init_bot_count = register_cvar("zs_init_bot_count" , "6")
-	cvar_health_multiplier = register_cvar("zs_health_multiplier_per_player" , "1.2")
-	cvar_rest_time = register_cvar("zs_rest_time" , "30")
-	cvar_stage_time = register_cvar("zs_stage_time", "150");
-	cvar_start_token = register_cvar("zs_token_start", "2");
-	cvar_token_kills_per_stage = register_cvar("zs_token_kills_per_stage", "30");
+	cvar_init_bot_count = register_cvar("zs_stage_init_bot_count" , "6")
+	cvar_health_multiplier = register_cvar("zs_stage_health_multiplier_per_player" , "1.2")
+	cvar_rest_time = register_cvar("zs_stage_rest_time" , "30")
+	cvar_stage_time = register_cvar("zs_stage_stage_time", "150");
+	cvar_start_token = register_cvar("zs_stage_token_start", "2");
+	cvar_token_kills_per_stage = register_cvar("zs_stage_token_kills_per_stage", "30");
 
 	register_concmd("zs_start" , "Start_Game")
 	g_hudmessage_queue_id = hudmessage_queue_register_left();
@@ -141,6 +142,7 @@ public Start_Game()
 	server_cmd("mp_autoteambalance 0")
 	server_cmd("mp_limitteams 20");
 	server_cmd("sv_maxspeed 10000");
+	server_cmd("mp_timelimit 9999");
 }
 
 public Event_RoundStart(id)
@@ -214,10 +216,6 @@ public tick_progress()
 			{
 				stage_midnight_start();
 			}
-			else if (g_iCurrStage == MAX_STAGE)
-			{
-				Game_End();
-			}
 			else
 			{
 				Stage_End();
@@ -230,6 +228,8 @@ public tick_progress()
 
 Rest_Start()
 {
+	if(!g_bModActive)	return;
+
 	set_lights("f")
 	g_iGameState = STATE_REST;
 	g_iRestTimeRemain = get_pcvar_num(cvar_rest_time)
@@ -309,7 +309,13 @@ stage_midnight_end()
 
 Stage_End()
 {
-	if(g_iCurrStage == STAGE_2 || g_iCurrStage == STAGE_4)
+	// Only end if it's after the final stage
+	if (g_iCurrStage >= MAX_STAGE)
+	{
+		Game_End();
+	}
+
+	if(g_iCurrStage == STAGE_2 || g_iCurrStage == STAGE_4 || g_iCurrStage == STAGE_7)
 	{
 		for(new i = 0 ; i < 33 ; i++)
 		{
@@ -317,12 +323,14 @@ Stage_End()
 		}
 	}
 	g_iCurrStage++;
+
+
 	// ToDo: Point to token conversion
 }
 
 Game_End()
 {
-	round_end(WINNER_HUMAN);	
+	round_end(WINNER_HUMAN);
 }
 
 public set_info_message()
@@ -396,7 +404,7 @@ public Ham_TakeDamage_Pre(Victim, iInflictor, Attacker, Float:fDamage, m_Damageb
 	static Float:newDmg;
 
 	newDmg = Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, fDamage, m_Damagebits);
-	newDmg = Ham_TakeDamage_Pre_Relic(Victim, iInflictor, Attacker, fDamage, m_Damagebits);
+	newDmg = Ham_TakeDamage_Pre_Relic(Victim, iInflictor, Attacker, newDmg, m_Damagebits);
 	SetHamParamFloat(4, newDmg)
 }
 
@@ -502,10 +510,6 @@ public Ham_Killed_Post(id, attacker, shouldgib)
 	{
 		round_end(WINNER_ZOMBIE)
 	}
-	if(g_bProgressEnd && get_alive_zombie_count() == 0)
-	{
-		round_end(WINNER_HUMAN);
-	}
 
 	Ham_Killed_Post_AmmoPack(id /*, attacker , shouldgib */);
 
@@ -579,6 +583,13 @@ public round_end(winner)
 	if(winner == WINNER_HUMAN)
 	{
 		client_cmd(0 , "spk %s" , HUMAN_WIN_SOUND);
+		for(new i = 0 ; i < 33 ; i++)
+		{
+			g_iToken[i] += 1;
+			if(is_user_alive(i) && is_zombie(i))	// Kill all zombies
+				user_kill(i);
+		}
+
 	}
 	else
 	{
@@ -612,7 +623,9 @@ set_random_zombie_class(id)
 
 	new iBaseHealth = ArrayGetCell(g_ZombieClassBaseHealth, iClassId);
 	new Float:fHealth = float(iBaseHealth) * get_health_multiplier() * 0.8;
-	set_user_health(id , floatround(fHealth))
+	new iNewHealth = floatround(fHealth);
+	g_iZombieMaxHealth[id] = iNewHealth;
+	set_user_health(id , iNewHealth);
 
 	if(g_iGameState == STATE_MIDNIGHT)
 	{
@@ -695,7 +708,10 @@ public show_main_menu(id)
 	menu_additem( menu, "\wUpgrade Primary Weapon", "", 0);
 	menu_additem( menu, "\wUpgrade Secondary Weapon", "", 0);
 
-	formatex(szItem, charsmax(szItem), "\wBuy Traits (%i/%i)" , g_iTraitTakenCount[id] , g_iPlayerMaxTrait[id])
+	formatex(szItem, charsmax(szItem), "\wBuy Traits with Token (%i/%i)" , g_iTraitTakenCount[id] , g_iPlayerMaxTrait[id])
+	menu_additem( menu, szItem, "", 0);
+
+	formatex(szItem, charsmax(szItem), "\wBuy Traits with Ammopack")
 	menu_additem( menu, szItem, "", 0);
 	menu_display( id, menu, 0 );
 }
@@ -716,6 +732,10 @@ public main_menu_handler(id, menu, item)
 		{
 			show_menu_human_trait(id);
 		}
+		case 3:
+		{
+			show_menu_human_trait_ammopack(id);
+		}
 	}
 	menu_destroy( menu );
 	return PLUGIN_HANDLED;
@@ -723,12 +743,13 @@ public main_menu_handler(id, menu, item)
 
 public plugin_natives()
 {
-	register_library("zombie_scenario")
+	register_library("zombie_stage")
 	register_native("zs_class_zombie_register", "native_class_zombie_register")
 	register_native("zs_class_zombie_register_sound", "native_class_zombie_register_sound")
 	register_native("zs_core_is_active", "native_core_is_active")
 	register_native("zs_core_is_zombie", "native_core_is_zombie")
 	register_native("zs_core_get_player_zombie_class", "native_core_get_player_zombie_class")
+	register_native("zs_core_get_zombie_max_health", "native_core_get_zombie_max_health")
 	register_native("zs_core_get_zombie_class_knockback", "native_core_get_zombie_class_knockback")
 	register_native("zs_core_get_player_knockback", "native_core_get_player_knockback")
 	register_native("zs_core_set_player_knockback", "native_core_set_player_knockback")
@@ -824,6 +845,7 @@ public native_core_is_zombie(plugin_id, num_params)
 	return is_zombie(get_param(1))
 }
 
+
 public native_core_get_player_zombie_class(plugin_id, num_params)
 {
 	return g_iPlayerZombieClass[get_param(1)];
@@ -843,6 +865,12 @@ public native_core_set_player_knockback(plugin_id, num_params)
 {
 	g_fPlayerZombieKnockback[get_param(1)] = get_param_f(2)
 }
+
+public native_core_get_zombie_max_health()
+{
+	return g_iZombieMaxHealth[get_param(1)];
+}
+
 public native_core_is_active()
 {
 	return g_bModActive;

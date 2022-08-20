@@ -1,4 +1,5 @@
 #define m_iKevlar 112
+#define m_iClip	51
 
 #define COOLDOWN_HAWKEYE 10
 #define COOLDOWN_GUT 90
@@ -7,8 +8,9 @@
 
 #define DURATION_STUMBLING_BLOCK 1.5
 #define TASKID_REMOVE_STUMBLING_BLOCK 7777
+#define TASKID_FREE_SHOT_RESET 6766
 
-#define EXPLOSIVE_SHOT_HIT_COUNT 5
+#define EXPLOSIVE_SHOT_HIT_COUNT 3
 #define EXPLOSIVE_SHOT_RADIUS 100.0
 #define EXPLOSIVE_SHOT_BASE_DMG 30.0
 
@@ -16,6 +18,7 @@
 #define VAMPIRE_HEAL_RADIUS 120.0
 
 #define TRAIT_TOKEN_COST 2
+#define TRAIT_AMMOPACK_COST 10
 
 new const SOUND_LEARN_TRAIT[] = "sound/zombie_plague/levelup_trait.wav"
 
@@ -24,6 +27,8 @@ new const g_CSW_WPN_ENT_NAME[][] = {"weapon_p228", "weapon_scout", "weapon_xm101
 "weapon_mac10", "weapon_aug", "weapon_elite", "weapon_fiveseven", "weapon_ump45", "weapon_sg550", "weapon_galil", "weapon_famas", "weapon_usp",
 "weapon_glock18", "weapon_awp", "weapon_mp5navy", "weapon_m249", "weapon_m3", "weapon_m4a1", "weapon_tmp", "weapon_g3sg1", "weapon_deagle",
 "weapon_sg552", "weapon_ak47", "weapon_knife", "weapon_p90"};
+
+
 
 new Float:g_fPushAngle[MAX_PLAYERS + 1][3];	// The current recoil angle of the weapon that player is holding
 // ============= //
@@ -35,11 +40,13 @@ enum _:TOTAL_TRAITS{
 	ID_ADRENALINE = 0,
 	ID_BOXER,
 	ID_DEMOLITION,
+	ID_FREE_SHOT,
 	ID_FROZEN_SKIN,
 	ID_GLASS_CANNON,
 	ID_GUNNER,
 	ID_HEADHUNTER,
 	ID_HAWKEYE,
+	ID_NO_HEAD_NO_DMG,
 	ID_OVERLOAD,
 	ID_PIERCING,
 	ID_SAFEGUARD,
@@ -49,13 +56,19 @@ enum _:TOTAL_TRAITS{
 	ID_VAMPIRE
 }
 
+enum _:TRAIT_SOURCE {
+	SRC_TOKEN = 0,
+	SRC_AMMOPACK
+}
+
 new g_msgScreenFade;
 new g_szTraitName[TOTAL_TRAITS][32]
 new g_szTraitDesc[TOTAL_TRAITS][96]
+new g_iTraitSource[TOTAL_TRAITS]
 
+new g_iPlayerTraitLevel[33][TOTAL_TRAITS]
 
 new bool:g_hasTrait[33][TOTAL_TRAITS];
-new bool:g_bTraitUsed[TOTAL_TRAITS];
 new g_hudmessage_id_trait;
 
 // The cooldown of each trait per player;
@@ -68,6 +81,8 @@ new bool:g_bFrozen[33];
 // For ExplosiveShot
 new g_iHitBeforeExplosive[33];
 
+// For resetting free-shot refund
+new bool:g_bFreeShotInCooldown[33];
 
 new g_iExplodeSpriteIndex;
 
@@ -101,10 +116,12 @@ initTraits()
 	g_szTraitName[ID_BOXER] = "Boxer"
 	g_szTraitName[ID_DEMOLITION] = "Demolition"
 	g_szTraitName[ID_FROZEN_SKIN] = "Frozen Skin"
+	g_szTraitName[ID_FREE_SHOT] = "Free shot"
 	g_szTraitName[ID_GLASS_CANNON] = "Glass Cannon"
 	g_szTraitName[ID_GUNNER] = "Gunner"
 	g_szTraitName[ID_HAWKEYE] = "Hawk Eye"
 	g_szTraitName[ID_HEADHUNTER] = "Head Hunter"
+	g_szTraitName[ID_NO_HEAD_NO_DMG] = "No Head No Dmg"
 	g_szTraitName[ID_OVERLOAD] = "Overload"
 	g_szTraitName[ID_PIERCING] = "Piercing"
 	g_szTraitName[ID_STEADY_AIM] = "Steady Aim"
@@ -114,20 +131,40 @@ initTraits()
 	g_szTraitName[ID_VAMPIRE] = "Vampire"
 	// === Desc === //
 	g_szTraitDesc[ID_ADRENALINE] = "+1.5% damage per 2% lost health"
-	g_szTraitDesc[ID_BOXER] = "+10%*[Tier] melee damage"
-	g_szTraitDesc[ID_DEMOLITION] = "Every 5 hits , next hit deals 30*[Tier] explosive damage"
+	g_szTraitDesc[ID_BOXER] = "+10%*[Lv] melee damage"
+	g_szTraitDesc[ID_DEMOLITION] = "Every 3 hits , next hit deals 30*[Tier] explosive damage"
+	g_szTraitDesc[ID_FREE_SHOT] = "33% chance to refund the ammo on hit"
 	g_szTraitDesc[ID_FROZEN_SKIN] = "50% to freeze the attacker for 1.5 seconds upon taking damage"
 	g_szTraitDesc[ID_GLASS_CANNON] = "+25% damage , +50% incoming damage"
-	g_szTraitDesc[ID_GUNNER] = "+5%*[Tier] gun damage , -5%*[Tier] recoil"
+	g_szTraitDesc[ID_GUNNER] = "+10%*[Tier] gun damage , -10%*[Tier] recoil"
+	g_szTraitDesc[ID_NO_HEAD_NO_DMG] = "+50% headshot damage ; - 50% non-headshot damage"
 	g_szTraitDesc[ID_OVERLOAD] = "When overflow damage > 300 , 50% is converted to explosive damage"
 	g_szTraitDesc[ID_PIERCING] = "Your attack penetrates armor ; + 15% damage to enemy without armor"
 	g_szTraitDesc[ID_STEADY_AIM] = "You shoot accurately when jumping / moving"
-	g_szTraitDesc[ID_HAWKEYE] = "[BS only] Next shot must headshot (10s CD); -2s CD per hit"
+	g_szTraitDesc[ID_HAWKEYE] = "[BS only] Next non-headshot must headshot (10s CD); -2s CD per hit"
 	g_szTraitDesc[ID_HEADHUNTER] = "+20% headshot damage"
 	g_szTraitDesc[ID_SAFEGUARD] = "Gain 5 seconds invincibility upon taking fatal damage"		// Maybe +atk ?
 	g_szTraitDesc[ID_STUMBLING_BLOCK] = "Shots have 10% (33% for leg hits) chance to immobilize enemy for 1.5 seconds"
-	g_szTraitDesc[ID_TOUGHNESS] =	"-6%*[Tier] incoming damage, 3%*[Tier] chance blocks attack"
-	g_szTraitDesc[ID_VAMPIRE] = "Heals 10 hp on kills ; or 5 hp when enemies killed nearby"
+	g_szTraitDesc[ID_TOUGHNESS] =	"-10%*[Lv] incoming damage, 5%*[Lv] chance blocks attack"
+	g_szTraitDesc[ID_VAMPIRE] = "Heals 10[+1*Tier] hp on kills ; or 5 hp when enemies killed nearby"
+	// === SRC === //
+	g_iTraitSource[ID_ADRENALINE] = SRC_TOKEN
+	g_iTraitSource[ID_BOXER] = SRC_AMMOPACK
+	g_iTraitSource[ID_DEMOLITION] = SRC_TOKEN
+	g_iTraitSource[ID_FREE_SHOT] = SRC_TOKEN
+	g_iTraitSource[ID_FROZEN_SKIN] = SRC_TOKEN
+	g_iTraitSource[ID_GLASS_CANNON] = SRC_TOKEN
+	g_iTraitSource[ID_GUNNER] = SRC_AMMOPACK
+	g_iTraitSource[ID_NO_HEAD_NO_DMG] = SRC_TOKEN
+	g_iTraitSource[ID_OVERLOAD] = SRC_TOKEN
+	g_iTraitSource[ID_PIERCING] = SRC_TOKEN
+	g_iTraitSource[ID_STEADY_AIM] = SRC_TOKEN
+	g_iTraitSource[ID_HAWKEYE] = SRC_TOKEN
+	g_iTraitSource[ID_HEADHUNTER] = SRC_TOKEN
+	g_iTraitSource[ID_SAFEGUARD] = SRC_TOKEN
+	g_iTraitSource[ID_STUMBLING_BLOCK] = SRC_TOKEN
+	g_iTraitSource[ID_TOUGHNESS] =	SRC_AMMOPACK
+	g_iTraitSource[ID_VAMPIRE] = SRC_TOKEN
 }
 
 round_start_post_human_trait()
@@ -138,12 +175,9 @@ round_start_post_human_trait()
 		{
 			g_hasTrait[i][j] = false;
 			g_iTraitCooldown[i][j] = -1;
+			g_iPlayerTraitLevel[i][j] = 0;
 		}
 		g_iTraitTakenCount[i] = 0;
-	}
-	for(new i = 0 ; i < TOTAL_TRAITS ; i++)
-	{
-		g_bTraitUsed[i] = false;
 	}
 }
 
@@ -168,12 +202,21 @@ public show_trait_message()
 	get_players_ex(players, iCount , GetPlayers_ExcludeBots)
 	for( i = 0 ; i < iCount ; i++)
 	{
-		static szMsg[128]; 
+		static szMsg[256]; 
 		static id; id = players[i];
-		szMsg = "Traits : ";
+
+		static szMsgToken[128]
+		static szMsgUpgrade[128]
+
+		szMsg = "";
+		szMsgToken = "Traits : ";
+		szMsgUpgrade = "Upgrades : ";
+
 		for(new traitId = 0 ; traitId < TOTAL_TRAITS ; traitId++)
 		{
-			if(g_hasTrait[id][traitId])
+			if(!g_hasTrait[id][traitId])	continue;
+
+			if(g_iTraitSource[traitId] == SRC_TOKEN)
 			{
 				static szTraitName[20];
 				if(g_iTraitCooldown[id][traitId] > 0)
@@ -181,9 +224,21 @@ public show_trait_message()
 				else
 					formatex(szTraitName , charsmax(szTraitName), "%s | ", g_szTraitName[traitId])	
 				
-				strcat(szMsg, szTraitName, charsmax(szMsg))
+				strcat(szMsgToken, szTraitName, charsmax(szMsgToken))
+			}
+			else if (g_iTraitSource[traitId] == SRC_AMMOPACK)
+			{
+				static szTraitName[20];
+				formatex(szTraitName , charsmax(szTraitName), "%s L%i | ", g_szTraitName[traitId] , g_iPlayerTraitLevel[id][traitId])
+				
+				strcat(szMsgUpgrade, szTraitName, charsmax(szMsgUpgrade))
 			}
 		}
+
+		strcat(szMsg , szMsgToken, charsmax(szMsg))
+		strcat(szMsg , "^n", charsmax(szMsg))
+		strcat(szMsg , szMsgUpgrade, charsmax(szMsg))
+		
 		hudmessage_queue_set_player_message_left(g_hudmessage_id_trait, id, szMsg)
 	}	
 	return PLUGIN_HANDLED;
@@ -201,11 +256,27 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 	
 	static cswId; cswId = get_user_weapon(Attacker);
 	static Float:dmg; dmg = Damage;
+	
 
+	// ==FreeShot== //
+	if(g_hasTrait[Attacker][ID_FREE_SHOT] && cswId != CSW_KNIFE)
+	{
+		if(!g_bFreeShotInCooldown[Attacker])
+		{
+			if(random_num(1, 100) < 33)
+			{
+				new iAttackerWpnEnt = cs_get_user_weapon_entity(Attacker);
+				new ammo = get_pdata_int(iAttackerWpnEnt, m_iClip, 4);
+				cs_set_weapon_ammo(iAttackerWpnEnt, ammo + 1);
+			}
+			set_task(0.05, "reset_freeshot", Attacker + TASKID_FREE_SHOT_RESET);
+			g_bFreeShotInCooldown[Attacker] = true;
+		}
+	}
 	// ==HwakEye== //
 	if(g_hasTrait[Attacker][ID_HAWKEYE] && ((1 << cswId) & WPN_SEMI_SNIPER))
 	{
-		if(g_iTraitCooldown[Attacker][ID_HAWKEYE] <= 0 )
+		if(g_iTraitCooldown[Attacker][ID_HAWKEYE] <= 0 && get_tr2(Traceresult, TR_iHitgroup) != HIT_HEAD)
 		{
 			set_tr2(Traceresult, TR_iHitgroup, HIT_HEAD);
 			g_iTraitCooldown[Attacker][ID_HAWKEYE] = COOLDOWN_HAWKEYE			
@@ -217,17 +288,18 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 	}
 	if(g_hasTrait[Attacker][ID_GLASS_CANNON])
 		dmg *= 1.25;
+
 	// ==Boxer== //
 	if(cswId == CSW_KNIFE)
 	{
 		if(g_hasTrait[Attacker][ID_BOXER])
-			dmg *= (1.0 + float(g_iCurrStage)/10)
-		
+			dmg *= 1.0 + g_iPlayerTraitLevel[Attacker][ID_BOXER] * 0.1;
 	}
+
 	// ==Gunner== //
 	if(g_hasTrait[Attacker][ID_GUNNER] && ((1 << cswId) & GUN_TYPE))
 	{
-		dmg *= (1.0 + 0.05 * g_iCurrStage)
+		dmg *= 1.0 + g_iPlayerTraitLevel[Attacker][ID_GUNNER] * 0.1;
 	}
 	// ==Adrenaline== //
 	if(g_hasTrait[Attacker][ID_ADRENALINE])
@@ -235,11 +307,22 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 		new Float:multi = 1.0 + (1.0 - float(get_user_health(Attacker))/ 100.0) / 1.5
 		dmg *= multi;
 	}
-	 // ==HeadHunter==//
-	if(g_hasTrait[Attacker][ID_HEADHUNTER] && get_tr2(Traceresult, TR_iHitgroup) == HIT_HEAD)
+
+	if(get_tr2(Traceresult, TR_iHitgroup) == HIT_HEAD)
 	{
-			dmg *= 1.2
+		// ==HeadHunter==//
+		if(g_hasTrait[Attacker][ID_HEADHUNTER])
+			dmg *= 1.2;
+		if(g_hasTrait[Attacker][ID_NO_HEAD_NO_DMG])
+			dmg *= 1.5;
 	}
+	else
+	{
+		if(g_hasTrait[Attacker][ID_NO_HEAD_NO_DMG])
+			dmg *= 0.5;
+
+	}
+
 	// ==ExplosiveBullet== //
 	if(g_hasTrait[Attacker][ID_DEMOLITION])
 	{
@@ -274,7 +357,8 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 
 Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage, m_Damagebits )
 {
-	static Float:dmg; dmg = fDamage;
+	new Float:dmg; dmg = fDamage;
+
 	if(is_user_connected(Attacker))
 	{
 		new iVictimTeam = _:cs_get_user_team(Victim);
@@ -287,8 +371,8 @@ Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage
 	// ==Toughness== //
 	if(g_hasTrait[Victim][ID_TOUGHNESS])
 	{
-		static iTier; iTier =  g_iCurrStage;
-		if(random_num(1, 100) < 4*iTier)
+		static iTier; iTier = g_iPlayerTraitLevel[Victim][ID_TOUGHNESS];
+		if(random_num(1, 100) < 5*iTier)
 			dmg = 0.0;
 		else
 			dmg *= 1.0 - float(iTier) * 0.06;
@@ -335,11 +419,13 @@ Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage
 	// ==Frozen Skin== //
 	if(g_hasTrait[Victim][ID_FROZEN_SKIN] && random_num(1, 100) < 50)
 	{
-		g_bFrozen[Victim] = true;
-		fm_set_rendering(Victim,kRenderFxGlowShell,255,255,255,kRenderNormal,8);
-		remove_task(Victim + TASKID_REMOVE_STUMBLING_BLOCK);
-		set_task(DURATION_STUMBLING_BLOCK, "remove_stumbling_block", Victim + TASKID_REMOVE_STUMBLING_BLOCK);
+		g_bFrozen[Attacker] = true;
+		fm_set_rendering(Attacker,kRenderFxGlowShell,255,255,255,kRenderNormal,8);
+		remove_task(Attacker + TASKID_REMOVE_STUMBLING_BLOCK);
+		set_task(DURATION_STUMBLING_BLOCK, "remove_stumbling_block", Attacker + TASKID_REMOVE_STUMBLING_BLOCK);
 	}
+
+
 	return dmg;
 }
 
@@ -398,16 +484,23 @@ public remove_stumbling_block(taskid)
 	fm_set_rendering(id); // reset back to normal
 }
 
+public reset_freeshot(taskid)
+{
+	new id = taskid - TASKID_FREE_SHOT_RESET;
+	g_bFreeShotInCooldown[id] = false;
+}
+
 Ham_Killed_Pre_Human_Trait(victim, attacker, shouldgib)
 {
-	if(!g_bTraitUsed[ID_VAMPIRE] || !is_zombie(victim))
+	if(!is_zombie(victim))
 		return HAM_IGNORED;
 
 	if(is_user_alive(attacker) && g_hasTrait[attacker][ID_VAMPIRE])
 	{
+		new toHeal = VAMPIRE_HEAL_AMT + g_iCurrStage;
 		new hp = get_user_health(attacker);
-		if(hp < (100 - VAMPIRE_HEAL_AMT))
-			set_user_health(attacker, hp + VAMPIRE_HEAL_AMT)
+		if(hp < (100 - toHeal))
+			set_user_health(attacker, hp + toHeal)
 		else
 			set_user_health(attacker, 100)
 	}
@@ -501,7 +594,7 @@ public fw_Weapon_PrimaryAttack_Post(ent)
 
 	static Float:fRecoil; fRecoil = 1.0;
 	if(g_hasTrait[ownerId][ID_GUNNER])
-		fRecoil *= 1.0 - g_iCurrStage * 0.05
+		fRecoil *= 1.0 - g_iPlayerTraitLevel[ownerId][ID_GUNNER] * 0.1
 
 	new Float:push[3]
 	pev(ownerId,pev_punchangle,push)
@@ -513,23 +606,30 @@ public fw_Weapon_PrimaryAttack_Post(ent)
 	return HAM_IGNORED
 }
 
-// === TraitMenu === //
+// === TraitMenu ( Token ) === //
 show_menu_human_trait(id)
 {
 	static szTitle[32];
 	formatex(szTitle, charsmax(szTitle), "\r Tokens : [%i]" , g_iToken[id])
 	new menu = menu_create(szTitle, "menu_human_trait_handler" );
 
-	static szDisplay[512];
+	static szDisplay[128];
 	static szTraitId[3];
 	static traitId;
-	new Array:upgradable = get_upgradable_traitId(id);
+	new Array:upgradable = get_upgradable_traitId_token(id);
 	for(new i = 0 ; i < ArraySize(upgradable) ; i++)
 	{
 		traitId = ArrayGetCell(upgradable, i);
+		// formatex(szTraitName , charsmax(szTraitName) , "%s" , g_szTraitName[traitId])
 		formatex(szDisplay , charsmax(szDisplay) , "%s - %s" ,g_szTraitName[traitId], g_szTraitDesc[traitId])
+		// formatex(szTraitDesc , charsmax(szTraitDesc) , "------- %s", g_szTraitDesc[traitId])
 		formatex(szTraitId , charsmax(szTraitId) , "%i" , traitId);
-		menu_additem( menu, szDisplay, szTraitId);	
+		menu_additem( menu, szDisplay, szTraitId);
+		if((i+1) % 5 == 0 )
+		{
+			menu_addblank2(menu)
+			menu_addblank2(menu)
+		}
 	}
 
 	ArrayDestroy(upgradable);
@@ -542,6 +642,7 @@ public menu_human_trait_handler( id, menu, item )
 		return PLUGIN_HANDLED;
 	
 	if(is_user_alive(id) && g_iToken[id] >= TRAIT_TOKEN_COST && g_iTraitTakenCount[id] < g_iPlayerMaxTrait[id]){
+	// if(is_user_alive(id)){
 		//now lets create some variables that will give us information about the menu and the item that was pressed/chosen
 		new szData[16], szName[64];
 		new _access, item_callback;
@@ -550,30 +651,99 @@ public menu_human_trait_handler( id, menu, item )
 
 		new iTraitId = str_to_num(szData);
 
-		choose_trait(id , iTraitId);
+		choose_trait_token(id , iTraitId);
 		g_iToken[id] -= TRAIT_TOKEN_COST;
 	}
 	menu_destroy( menu );
 	return PLUGIN_HANDLED;
 }
 
+// ========= Menu ( Ammopack ) =========== //
+show_menu_human_trait_ammopack(id)
+{
+	static szTitle[32];
+	formatex(szTitle, charsmax(szTitle), "\r Ammopacks : [%i]" , g_iAmmoPack[id])
+	new menu = menu_create(szTitle, "menu_human_trait_handler_ammopack" );
 
-Array:get_upgradable_traitId(id)
+	static szDisplay[128];
+	static szTraitId[3];
+	static traitId;
+	new Array:upgradable = get_upgradable_traitId_ammopack(id);
+	for(new i = 0 ; i < ArraySize(upgradable) ; i++)
+	{
+		traitId = ArrayGetCell(upgradable, i);
+		// formatex(szTraitName , charsmax(szTraitName) , "%s" , g_szTraitName[traitId])
+		formatex(szDisplay , charsmax(szDisplay) , "%s - %s" ,g_szTraitName[traitId], g_szTraitDesc[traitId])
+		// formatex(szTraitDesc , charsmax(szTraitDesc) , "------- %s", g_szTraitDesc[traitId])
+		formatex(szTraitId , charsmax(szTraitId) , "%i" , traitId);
+		menu_additem( menu, szDisplay, szTraitId);
+		if((i+1) % 5 == 0 )
+		{
+			menu_addblank2(menu)
+			menu_addblank2(menu)
+		}
+	}
+
+	ArrayDestroy(upgradable);
+	menu_display(id, menu, 0 );
+}
+
+public menu_human_trait_handler_ammopack( id, menu, item )
+{
+	if ( item == MENU_EXIT )
+		return PLUGIN_HANDLED;
+	
+	if(is_user_alive(id) && g_iAmmoPack[id] >= TRAIT_AMMOPACK_COST){
+	// if(is_user_alive(id)){
+		//now lets create some variables that will give us information about the menu and the item that was pressed/chosen
+		new szData[16], szName[64];
+		new _access, item_callback;
+		//heres the function that will give us that information ( since it doesnt magicaly appear )
+		menu_item_getinfo( menu, item, _access, szData, charsmax( szData ), szName, charsmax( szName ), item_callback );
+
+		new iTraitId = str_to_num(szData);
+
+		choose_trait_ammopack(id , iTraitId);
+		g_iAmmoPack[id] -= TRAIT_AMMOPACK_COST;
+	}
+	menu_destroy( menu );
+	return PLUGIN_HANDLED;
+}
+
+
+Array:get_upgradable_traitId_token(id)
 {
 	new Array:array = ArrayCreate();
 	for(new traitId = 0 ; traitId < TOTAL_TRAITS ; traitId++)
 	{
-		if(!g_hasTrait[id][traitId])
+		if(!g_hasTrait[id][traitId] && g_iTraitSource[traitId] == SRC_TOKEN)
 			ArrayPushCell(array, traitId);
 	}
 	return array;
 }
 
-choose_trait(id, traitId)
+Array:get_upgradable_traitId_ammopack(id)
+{
+	new Array:array = ArrayCreate();
+	for(new traitId = 0 ; traitId < TOTAL_TRAITS ; traitId++)
+	{
+		if(g_iTraitSource[traitId] == SRC_AMMOPACK)
+			ArrayPushCell(array, traitId);
+	}
+	return array;
+}
+
+choose_trait_token(id, traitId)
 {
 	g_iTraitTakenCount[id]++;
 	g_hasTrait[id][traitId] = true;
-	g_bTraitUsed[traitId] = true;
+	client_cmd(id, "spk %s", SOUND_LEARN_TRAIT);
+}
+
+choose_trait_ammopack(id, traitId)
+{
+	g_hasTrait[id][traitId] = true;
+	g_iPlayerTraitLevel[id][traitId]++;
 	client_cmd(id, "spk %s", SOUND_LEARN_TRAIT);
 }
 
@@ -630,7 +800,7 @@ stock doRadiusDamage(iAttacker, Float:vecOrigin[3] , bCheckTeam , Float:fRadius,
 		// Apply dmg to non teamates
 		new Float:damage = radius_calc(flDistance,EXP_RADIUS,EXP_DMG,EXP_DMG/3.0);
 		*/
-		console_print(0 , "[] dealing %f dmg" , fDamage)
+		// console_print(0 , "[] dealing %f dmg" , fDamage)
 		ExecuteHamB(Ham_TakeDamage,iVictim,iAttacker,iAttacker,fDamage,DMG_GRENADE);			
 	}
 }
