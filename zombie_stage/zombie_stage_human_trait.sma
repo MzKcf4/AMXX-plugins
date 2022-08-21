@@ -2,7 +2,9 @@
 #define m_iClip	51
 
 #define COOLDOWN_HAWKEYE 10
-#define COOLDOWN_GUT 90
+#define COOLDOWN_SAFEGUARD 90
+#define COOLDOWN_OVERCHARGE 30
+
 #define DURATION_GODMODE 5.0
 #define TASKID_REMOVE_GODMODE 6666
 
@@ -14,6 +16,10 @@
 #define EXPLOSIVE_SHOT_RADIUS 100.0
 #define EXPLOSIVE_SHOT_BASE_DMG 30.0
 
+#define OVERLOAD_RADIUS 150.0
+
+#define GRAVITY_RADIUS 250.0
+
 #define VAMPIRE_HEAL_AMT 10
 #define VAMPIRE_HEAL_RADIUS 120.0
 
@@ -21,6 +27,8 @@
 #define TRAIT_AMMOPACK_COST 10
 
 new const SOUND_LEARN_TRAIT[] = "sound/zombie_plague/levelup_trait.wav"
+new const SOUND_BUFF[] = "sound/zombie_plague/td_buff_2.wav"
+new const SOUND_DEBUFF[] = "sound/zombie_plague/td_debuff.wav"
 
 // === Recoil === //
 new const g_CSW_WPN_ENT_NAME[][] = {"weapon_p228", "weapon_scout", "weapon_xm1014",
@@ -43,10 +51,12 @@ enum _:TOTAL_TRAITS{
 	ID_FREE_SHOT,
 	ID_FROZEN_SKIN,
 	ID_GLASS_CANNON,
+	ID_GRAVITY,
 	ID_GUNNER,
 	ID_HEADHUNTER,
 	ID_HAWKEYE,
 	ID_NO_HEAD_NO_DMG,
+	ID_OVERCHARGE,
 	ID_OVERLOAD,
 	ID_PIERCING,
 	ID_SAFEGUARD,
@@ -61,18 +71,31 @@ enum _:TRAIT_SOURCE {
 	SRC_AMMOPACK
 }
 
+enum _:TRAIT_TYPE {
+	TYPE_PASSIVE = 0,
+	TYPE_SKILL
+}
+
 new g_msgScreenFade;
+new g_iBarTime;
+
 new g_szTraitName[TOTAL_TRAITS][32]
 new g_szTraitDesc[TOTAL_TRAITS][96]
 new g_iTraitSource[TOTAL_TRAITS]
+new g_iTraitType[TOTAL_TRAITS]
+new	bool:g_bIsTraitActive[33][TOTAL_TRAITS]
+
 
 new g_iPlayerTraitLevel[33][TOTAL_TRAITS]
 
 new bool:g_hasTrait[33][TOTAL_TRAITS];
 new g_hudmessage_id_trait;
+new g_hudmessage_id_skill;
 
 // The cooldown of each trait per player;
 new g_iTraitCooldown[33][TOTAL_TRAITS];
+// Holds the Trait ID
+new g_iPlayerSkillSlot[33][3]
 
 // For resetting in TakeDamage_Post
 new bool:g_bPierced[33];
@@ -80,16 +103,27 @@ new bool:g_bPierced[33];
 new bool:g_bFrozen[33];
 // For ExplosiveShot
 new g_iHitBeforeExplosive[33];
+new g_iExplodeSpriteIndex;
 
 // For resetting free-shot refund
 new bool:g_bFreeShotInCooldown[33];
 
-new g_iExplodeSpriteIndex;
+// Weak period after using overcharge
+#define TASKID_OVERCHARGE_TO_WEAK 6800
+#define DURATION_OVERCHARGE_ACTIVE 5.0
+#define TASKID_OVERCHARGE_WEAK_END 6850
+#define DURATION_OVERCHARGE_WEAK 15.0
+new bool:g_bIsOverchargeWeak[33];
+
 
 plugin_init_human_trait()
 {
 	register_forward(FM_PlayerPreThink, "fw_PlayerPreThink")
 	register_forward(FM_TraceLine,"fw_traceline",1);
+
+	register_clcmd("ZsSkill1","UseSkill1");
+	register_clcmd("ZsSkill2","UseSkill2");
+	register_clcmd("ZsSkill3","UseSkill3");
 
 	for(new i = 0 ; i < sizeof(g_CSW_WPN_ENT_NAME) ; i++)
 	{
@@ -100,12 +134,18 @@ plugin_init_human_trait()
 	set_task(1.0, "show_trait_message", _,_,_,"b");
 	set_task(1.0, "trait_cooldown_tick", _,_,_,"b");
 	g_hudmessage_id_trait = hudmessage_queue_register_left(); 
+	g_hudmessage_id_skill = hudmessage_queue_register_bottom();
 	g_msgScreenFade = get_user_msgid( "ScreenFade" );
+	g_iBarTime = get_user_msgid("BarTime")
 }
+
 
 plugin_precache_human_trait()
 {
 	precache_generic(SOUND_LEARN_TRAIT);
+	precache_generic(SOUND_BUFF);
+	precache_generic(SOUND_DEBUFF);
+
 	g_iExplodeSpriteIndex = precache_model("sprites/zerogxplode.spr"); 
 }
 
@@ -118,10 +158,12 @@ initTraits()
 	g_szTraitName[ID_FROZEN_SKIN] = "Frozen Skin"
 	g_szTraitName[ID_FREE_SHOT] = "Free shot"
 	g_szTraitName[ID_GLASS_CANNON] = "Glass Cannon"
+	g_szTraitName[ID_GRAVITY] = "Gravity"
 	g_szTraitName[ID_GUNNER] = "Gunner"
 	g_szTraitName[ID_HAWKEYE] = "Hawk Eye"
 	g_szTraitName[ID_HEADHUNTER] = "Head Hunter"
 	g_szTraitName[ID_NO_HEAD_NO_DMG] = "No Head No Dmg"
+	g_szTraitName[ID_OVERCHARGE] = "Overcharge"
 	g_szTraitName[ID_OVERLOAD] = "Overload"
 	g_szTraitName[ID_PIERCING] = "Piercing"
 	g_szTraitName[ID_STEADY_AIM] = "Steady Aim"
@@ -136,14 +178,16 @@ initTraits()
 	g_szTraitDesc[ID_FREE_SHOT] = "33% chance to refund the ammo on hit"
 	g_szTraitDesc[ID_FROZEN_SKIN] = "50% to freeze the attacker for 1.5 seconds upon taking damage"
 	g_szTraitDesc[ID_GLASS_CANNON] = "+25% damage , +50% incoming damage"
+	g_szTraitDesc[ID_GRAVITY] = "Pull enemies towards the target you killed"
 	g_szTraitDesc[ID_GUNNER] = "+10%*[Tier] gun damage , -10%*[Tier] recoil"
 	g_szTraitDesc[ID_NO_HEAD_NO_DMG] = "+50% headshot damage ; - 50% non-headshot damage"
+	g_szTraitDesc[ID_OVERCHARGE] = "[Skill] +100% damage for 5s , then -50% damage for 15s (35s CD)"
 	g_szTraitDesc[ID_OVERLOAD] = "When overflow damage > 300 , 50% is converted to explosive damage"
 	g_szTraitDesc[ID_PIERCING] = "Your attack penetrates armor ; + 15% damage to enemy without armor"
 	g_szTraitDesc[ID_STEADY_AIM] = "You shoot accurately when jumping / moving"
 	g_szTraitDesc[ID_HAWKEYE] = "[BS only] Next non-headshot must headshot (10s CD); -2s CD per hit"
 	g_szTraitDesc[ID_HEADHUNTER] = "+20% headshot damage"
-	g_szTraitDesc[ID_SAFEGUARD] = "Gain 5 seconds invincibility upon taking fatal damage"		// Maybe +atk ?
+	g_szTraitDesc[ID_SAFEGUARD] = "Gain 5 seconds invincibility upon taking fatal damage , instant heals 70 hp"		// Maybe +atk ?
 	g_szTraitDesc[ID_STUMBLING_BLOCK] = "Shots have 10% (33% for leg hits) chance to immobilize enemy for 1.5 seconds"
 	g_szTraitDesc[ID_TOUGHNESS] =	"-10%*[Lv] incoming damage, 5%*[Lv] chance blocks attack"
 	g_szTraitDesc[ID_VAMPIRE] = "Heals 10[+1*Tier] hp on kills ; or 5 hp when enemies killed nearby"
@@ -154,8 +198,10 @@ initTraits()
 	g_iTraitSource[ID_FREE_SHOT] = SRC_TOKEN
 	g_iTraitSource[ID_FROZEN_SKIN] = SRC_TOKEN
 	g_iTraitSource[ID_GLASS_CANNON] = SRC_TOKEN
+	g_iTraitSource[ID_GRAVITY] = SRC_TOKEN
 	g_iTraitSource[ID_GUNNER] = SRC_AMMOPACK
 	g_iTraitSource[ID_NO_HEAD_NO_DMG] = SRC_TOKEN
+	g_iTraitSource[ID_OVERCHARGE] = SRC_TOKEN
 	g_iTraitSource[ID_OVERLOAD] = SRC_TOKEN
 	g_iTraitSource[ID_PIERCING] = SRC_TOKEN
 	g_iTraitSource[ID_STEADY_AIM] = SRC_TOKEN
@@ -165,6 +211,26 @@ initTraits()
 	g_iTraitSource[ID_STUMBLING_BLOCK] = SRC_TOKEN
 	g_iTraitSource[ID_TOUGHNESS] =	SRC_AMMOPACK
 	g_iTraitSource[ID_VAMPIRE] = SRC_TOKEN
+	// === TYPE === //
+	g_iTraitType[ID_ADRENALINE] = TYPE_PASSIVE
+	g_iTraitType[ID_BOXER] = TYPE_PASSIVE
+	g_iTraitType[ID_DEMOLITION] = TYPE_PASSIVE
+	g_iTraitType[ID_FREE_SHOT] = TYPE_PASSIVE
+	g_iTraitType[ID_FROZEN_SKIN] = TYPE_PASSIVE
+	g_iTraitType[ID_GLASS_CANNON] = TYPE_PASSIVE
+	g_iTraitType[ID_GRAVITY] = TYPE_PASSIVE
+	g_iTraitType[ID_GUNNER] = TYPE_PASSIVE
+	g_iTraitType[ID_NO_HEAD_NO_DMG] = TYPE_PASSIVE
+	g_iTraitType[ID_OVERCHARGE] = TYPE_SKILL
+	g_iTraitType[ID_OVERLOAD] = TYPE_PASSIVE
+	g_iTraitType[ID_PIERCING] = TYPE_PASSIVE
+	g_iTraitType[ID_STEADY_AIM] = TYPE_PASSIVE
+	g_iTraitType[ID_HAWKEYE] = TYPE_PASSIVE
+	g_iTraitType[ID_HEADHUNTER] = TYPE_PASSIVE
+	g_iTraitType[ID_SAFEGUARD] = TYPE_PASSIVE
+	g_iTraitType[ID_STUMBLING_BLOCK] = TYPE_PASSIVE
+	g_iTraitType[ID_TOUGHNESS] = TYPE_PASSIVE
+	g_iTraitType[ID_VAMPIRE] = TYPE_PASSIVE
 }
 
 round_start_post_human_trait()
@@ -176,6 +242,12 @@ round_start_post_human_trait()
 			g_hasTrait[i][j] = false;
 			g_iTraitCooldown[i][j] = -1;
 			g_iPlayerTraitLevel[i][j] = 0;
+			g_bIsTraitActive[i][j] = false;
+		}
+
+		for(new j = 0 ; j < sizeof(g_iPlayerSkillSlot[])  ; j++)
+		{
+			g_iPlayerSkillSlot[i][j] = -1;
 		}
 		g_iTraitTakenCount[i] = 0;
 	}
@@ -202,21 +274,38 @@ public show_trait_message()
 	get_players_ex(players, iCount , GetPlayers_ExcludeBots)
 	for( i = 0 ; i < iCount ; i++)
 	{
-		static szMsg[256]; 
+		static szMsg[374]; 
 		static id; id = players[i];
 
 		static szMsgToken[128]
 		static szMsgUpgrade[128]
+		static szMsgSkill[128]
+
+		new iOwnSkillCount = 0;
 
 		szMsg = "";
 		szMsgToken = "Traits : ";
 		szMsgUpgrade = "Upgrades : ";
+		szMsgSkill = "Skills : ";
 
 		for(new traitId = 0 ; traitId < TOTAL_TRAITS ; traitId++)
 		{
 			if(!g_hasTrait[id][traitId])	continue;
 
-			if(g_iTraitSource[traitId] == SRC_TOKEN)
+
+			if(g_iTraitType[traitId] == TYPE_SKILL)
+			{
+				static szTraitName[20];
+				iOwnSkillCount++;
+				
+				if(g_iTraitCooldown[id][traitId] > 0)
+					formatex(szTraitName , charsmax(szTraitName), "[%i] %s (%i) | ",iOwnSkillCount, g_szTraitName[traitId] , g_iTraitCooldown[id][traitId])
+				else
+					formatex(szTraitName , charsmax(szTraitName), "[%i] %s | ",iOwnSkillCount, g_szTraitName[traitId])	
+				
+				strcat(szMsgSkill, szTraitName, charsmax(szMsgSkill))				
+			} 
+			else if(g_iTraitSource[traitId] == SRC_TOKEN)
 			{
 				static szTraitName[20];
 				if(g_iTraitCooldown[id][traitId] > 0)
@@ -235,11 +324,16 @@ public show_trait_message()
 			}
 		}
 
+		
+		strcat(szMsg , szMsgSkill, charsmax(szMsg))
+		strcat(szMsg , "^n", charsmax(szMsg))
 		strcat(szMsg , szMsgToken, charsmax(szMsg))
 		strcat(szMsg , "^n", charsmax(szMsg))
 		strcat(szMsg , szMsgUpgrade, charsmax(szMsg))
 		
 		hudmessage_queue_set_player_message_left(g_hudmessage_id_trait, id, szMsg)
+
+		
 	}	
 	return PLUGIN_HANDLED;
 }
@@ -257,7 +351,6 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 	static cswId; cswId = get_user_weapon(Attacker);
 	static Float:dmg; dmg = Damage;
 	
-
 	// ==FreeShot== //
 	if(g_hasTrait[Attacker][ID_FREE_SHOT] && cswId != CSW_KNIFE)
 	{
@@ -273,6 +366,16 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 			g_bFreeShotInCooldown[Attacker] = true;
 		}
 	}
+
+	// ==Overcharge== //
+	if(g_hasTrait[Attacker][ID_OVERCHARGE])
+	{
+		if(g_bIsTraitActive[Attacker][ID_OVERCHARGE])
+			dmg *= 2.0;
+		else if (g_bIsOverchargeWeak[Attacker])
+			dmg *= 0.5;
+	}
+
 	// ==HwakEye== //
 	if(g_hasTrait[Attacker][ID_HAWKEYE] && ((1 << cswId) & WPN_SEMI_SNIPER))
 	{
@@ -384,8 +487,9 @@ Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage
 		set_task(DURATION_GODMODE, "remove_godmode", Victim + TASKID_REMOVE_GODMODE);
 		fm_set_rendering(Victim,kRenderFxGlowShell,255,255,255,kRenderNormal,8);
 		set_user_health(Victim, 1);
-		g_iTraitCooldown[Victim][ID_SAFEGUARD] = COOLDOWN_GUT
+		g_iTraitCooldown[Victim][ID_SAFEGUARD] = COOLDOWN_SAFEGUARD
 		fade_white(Victim);
+		set_user_health(Victim, 100)
 		return 0.0;
 	}
 	// ==Piercing ==//
@@ -413,7 +517,7 @@ Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage
 			entity_get_vector(Victim, EV_VEC_origin, fOrigin)	
 			makeExplosion(fOrigin, g_iExplodeSpriteIndex)
 			fDiff *= 0.5;
-			doRadiusDamage(Attacker, fOrigin, true, EXPLOSIVE_SHOT_RADIUS*1.5 , fDiff)
+			doRadiusDamage(Attacker, fOrigin, true, OVERLOAD_RADIUS , fDiff)
 		}
 	}
 	// ==Frozen Skin== //
@@ -452,6 +556,54 @@ Float:Ham_TakeDamage_Post_Human_Trait(Victim, iInflictor, Attacker, Float:fDamag
 	*/
 }
 
+// ========================== Skills =========================== //
+public UseSkill1(id)
+{
+	use_skill(id, 1);
+}
+
+public UseSkill2(id)
+{
+	use_skill(id, 2);
+}
+
+public UseSkill3(id)
+{
+	use_skill(id, 3);
+}
+
+use_skill(id, iSlot)
+{
+	new iTraitId = g_iPlayerSkillSlot[id][iSlot];
+	if(iTraitId == -1 || g_iTraitCooldown[id][iTraitId] > 0)		return;
+
+	if(iTraitId == ID_OVERCHARGE)
+	{
+		g_iTraitCooldown[id][iTraitId] = COOLDOWN_OVERCHARGE;
+		g_bIsTraitActive[id][iTraitId] = true;
+		set_task(DURATION_OVERCHARGE_ACTIVE, "task_overcharge_to_weak", id + TASKID_OVERCHARGE_TO_WEAK);
+		Make_ProgressBar(id , DURATION_OVERCHARGE_ACTIVE);
+		client_cmd(id, "spk %s", SOUND_BUFF);
+	}
+}
+
+public task_overcharge_to_weak(taskId)
+{
+	new id = taskId - TASKID_OVERCHARGE_TO_WEAK
+	set_task(DURATION_OVERCHARGE_WEAK, "task_overcharge_weak_end", id + TASKID_OVERCHARGE_WEAK_END);
+	g_bIsTraitActive[id][ID_OVERCHARGE] = false;
+	g_bIsOverchargeWeak[id] = true;
+	client_cmd(id, "spk %s", SOUND_DEBUFF);
+}
+
+public task_overcharge_weak_end(taskId)
+{
+	new id = taskId - TASKID_OVERCHARGE_WEAK_END
+	g_bIsOverchargeWeak[id] = false;
+}
+
+// ========================================================== //
+
 public fw_PlayerPreThink(id)
 {
 	if (!is_user_alive(id))
@@ -462,7 +614,7 @@ public fw_PlayerPreThink(id)
 		static Float:fFrozenVec[3];
 		fFrozenVec[0] = 0.0
 		fFrozenVec[1] = 0.0
-		fFrozenVec[2] = -800.0
+		fFrozenVec[2] = -500.0
 		entity_set_vector(id, EV_VEC_velocity, fFrozenVec)
 	}
 	return FMRES_IGNORED
@@ -492,8 +644,13 @@ public reset_freeshot(taskid)
 
 Ham_Killed_Pre_Human_Trait(victim, attacker, shouldgib)
 {
-	if(!is_zombie(victim))
+	if(!is_zombie(victim) || !is_user_alive(attacker))
 		return HAM_IGNORED;
+
+	if(g_hasTrait[attacker][ID_GRAVITY])
+	{
+		pullEntitiesTowardsTarget(victim , GRAVITY_RADIUS);
+	}
 
 	if(is_user_alive(attacker) && g_hasTrait[attacker][ID_VAMPIRE])
 	{
@@ -642,7 +799,6 @@ public menu_human_trait_handler( id, menu, item )
 		return PLUGIN_HANDLED;
 	
 	if(is_user_alive(id) && g_iToken[id] >= TRAIT_TOKEN_COST && g_iTraitTakenCount[id] < g_iPlayerMaxTrait[id]){
-	// if(is_user_alive(id)){
 		//now lets create some variables that will give us information about the menu and the item that was pressed/chosen
 		new szData[16], szName[64];
 		new _access, item_callback;
@@ -738,6 +894,13 @@ choose_trait_token(id, traitId)
 	g_iTraitTakenCount[id]++;
 	g_hasTrait[id][traitId] = true;
 	client_cmd(id, "spk %s", SOUND_LEARN_TRAIT);
+	for(new i = 0 ; i < sizeof(g_iPlayerSkillSlot[])  ; i++)
+	{
+		if(g_iPlayerSkillSlot[id][i] == -1)
+		{
+			g_iPlayerSkillSlot[id][i] = traitId;
+		}
+	}
 }
 
 choose_trait_ammopack(id, traitId)
@@ -787,20 +950,43 @@ stock doRadiusDamage(iAttacker, Float:vecOrigin[3] , bCheckTeam , Float:fRadius,
 
 		if(bCheckTeam && (_:cs_get_user_team(iVictim) == attackerTeam))
 			continue;
-		/*
-		static Float: vecVictimOrigin[3]; pev(iVictim, pev_origin, vecVictimOrigin);
-		pev(iVictim, pev_origin, vecVictimOrigin);
 
-		static Float: flDistance; flDistance = get_distance_f(vecOrigin, vecVictimOrigin);
-		static Float: vecVelocity[3];
-
-		UTIL_GetSpeedVector(vecOrigin, vecVictimOrigin, EXP_KNOCKBACK * (1.0 - flDistance / EXP_RADIUS), vecVelocity);
-		set_pev(iVictim, pev_velocity, vecVelocity);
-
-		// Apply dmg to non teamates
-		new Float:damage = radius_calc(flDistance,EXP_RADIUS,EXP_DMG,EXP_DMG/3.0);
-		*/
-		// console_print(0 , "[] dealing %f dmg" , fDamage)
 		ExecuteHamB(Ham_TakeDamage,iVictim,iAttacker,iAttacker,fDamage,DMG_GRENADE);			
 	}
+}
+
+stock pullEntitiesTowardsTarget(iTarget, Float:fRadius)
+{
+	new Float:fSrcVec[3] , Float:fDestVec[3] , Float:fDirVelocity[3];
+	pev(iTarget, pev_origin, fSrcVec);
+
+	new victimTeam = _:cs_get_user_team(iTarget);
+	new iInRange = -1;
+	while((iInRange = engfunc(EngFunc_FindEntityInSphere, iInRange, fSrcVec, fRadius)))
+	{
+		if(!is_user_alive(iInRange))
+			continue;
+
+		if(!(_:cs_get_user_team(iInRange) == victimTeam))
+			continue;
+
+		
+		pev(iInRange, pev_origin, fDestVec);
+
+		xs_vec_sub(fSrcVec , fDestVec, fDirVelocity);
+		xs_vec_normalize(fDirVelocity , fDirVelocity);
+		xs_vec_mul_scalar(fDirVelocity , 300.0 , fDirVelocity);
+		fDirVelocity[2] = 150.0
+
+		entity_set_vector(iInRange, EV_VEC_velocity, fDirVelocity)
+		// ExecuteHamB(Ham_TakeDamage,iVictim,iAttacker,iAttacker,fDamage,DMG_GRENADE);			
+	}
+}
+
+Make_ProgressBar(id , Float:fTime)
+{
+	new iTime = floatround(fTime, floatround_ceil)
+	message_begin(MSG_ONE_UNRELIABLE, g_iBarTime, .player=id)
+	write_short(iTime)
+	message_end()
 }
