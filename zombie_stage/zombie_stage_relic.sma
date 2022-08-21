@@ -94,9 +94,9 @@ Float:Ham_TraceAttack_Pre_Relic(Victim, Attacker, Float:Damage, Float:Direction[
 
 Float:Ham_TakeDamage_Pre_Relic(Victim, iInflictor, Attacker, Float:fDamage, m_Damagebits )
 {
-	if(g_iRelicBuffLevel[RELIC_TOUGHNESS] > NO_BUFF && !is_zombie(Attacker) && is_user_alive(Attacker))
+	if(g_iRelicBuffLevel[RELIC_TOUGHNESS] > NO_BUFF && is_zombie(Attacker) && is_user_alive(Attacker))
 	{
-		fDamage = fDamage * ( 1.0 - g_iRelicBuffLevel[RELIC_TOUGHNESS] * 0.1 )
+		fDamage = fDamage * ( 1.0 - g_iRelicBuffLevel[RELIC_TOUGHNESS] * 0.08 )
 	}
 	return fDamage;
 }
@@ -108,7 +108,7 @@ Ham_Item_PreFrame_Post_Relic(id)
 	pev(id,pev_maxspeed,fMaxSpeed)
 	if(g_iRelicBuffLevel[RELIC_SPEED] > 0 && is_user_alive(id) && !is_zombie(id) && fMaxSpeed != 1.0)
 	{
-		fMaxSpeed *= ( 1.0 + g_iRelicBuffLevel[RELIC_SPEED] * 0.05 );
+		fMaxSpeed *= ( 1.0 + g_iRelicBuffLevel[RELIC_SPEED] * 0.1 );
 		set_pev(id,pev_maxspeed, fMaxSpeed)
 	}
 }
