@@ -16,7 +16,7 @@
 // Classic Zombie Attributes
 new const zombieclass1_name[] = "Metatronic Zombie"
 new const zombieclass1_model[] = "metatronic_zombie"
-const zombieclass1_health = 2000
+const zombieclass1_health = 1400
 const Float:zombieclass1_speed = 270.0
 const Float:zombieclass1_gravity = 0.6
 const Float:zombieclass1_knockback = 0.15

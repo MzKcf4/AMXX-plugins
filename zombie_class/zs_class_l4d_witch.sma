@@ -18,7 +18,7 @@
 // Classic Zombie Attributes
 new const zombieclass1_name[] = "Witch"
 new const zombieclass1_model[] = "l4d_witch"
-const zombieclass1_health = 2500
+const zombieclass1_health = 2000
 const Float:zombieclass1_speed = 260.0
 const Float:zombieclass1_gravity = 0.6
 const Float:zombieclass1_knockback = 0.3

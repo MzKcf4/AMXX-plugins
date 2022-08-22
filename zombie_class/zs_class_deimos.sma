@@ -25,7 +25,7 @@
 //Smoker Atributes
 new const zclass_name[] = { "Deimos" }
 new const zclass_model[] = { "deimos_origin_ev" }
-const zclass_health = 2000
+const zclass_health = 1200
 const Float:zclass_speed = 250.0
 const Float:zclass_gravity = 0.7
 const Float:zclass_knockback = 0.3
