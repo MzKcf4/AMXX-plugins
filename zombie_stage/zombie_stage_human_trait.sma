@@ -18,8 +18,6 @@
 
 #define OVERLOAD_RADIUS 150.0
 
-#define GRAVITY_RADIUS 250.0
-
 #define VAMPIRE_HEAL_AMT 10
 #define VAMPIRE_HEAL_RADIUS 120.0
 
@@ -78,6 +76,7 @@ enum _:TRAIT_TYPE {
 
 new g_msgScreenFade;
 new g_iBarTime;
+new g_iSprBeamLine;
 
 new g_szTraitName[TOTAL_TRAITS][32]
 new g_szTraitDesc[TOTAL_TRAITS][96]
@@ -115,6 +114,14 @@ new bool:g_bFreeShotInCooldown[33];
 #define DURATION_OVERCHARGE_WEAK 15.0
 new bool:g_bIsOverchargeWeak[33];
 
+#define GRAVITY_RADIUS 300.0
+
+#define TASKID_GRAVITY_PULL 6900
+#define INTERVAL_GRAVITY_PULL 0.3
+#define REPEAT_TIME_GRAVITY_PULL 16
+#define DURATION_GRAVITY_PULL 5.2
+#define TASKID_GRAVITY_PULL_END 6950
+new g_iGravityPullCount[33];
 
 plugin_init_human_trait()
 {
@@ -146,6 +153,7 @@ plugin_precache_human_trait()
 	precache_generic(SOUND_BUFF);
 	precache_generic(SOUND_DEBUFF);
 
+	g_iSprBeamLine = precache_model("sprites/zbeam4.spr")
 	g_iExplodeSpriteIndex = precache_model("sprites/zerogxplode.spr"); 
 }
 
@@ -178,7 +186,7 @@ initTraits()
 	g_szTraitDesc[ID_FREE_SHOT] = "33% chance to refund the ammo on hit"
 	g_szTraitDesc[ID_FROZEN_SKIN] = "50% to freeze the attacker for 1.5 seconds upon taking damage"
 	g_szTraitDesc[ID_GLASS_CANNON] = "+25% damage , +50% incoming damage"
-	g_szTraitDesc[ID_GRAVITY] = "Pull enemies towards the target you killed"
+	g_szTraitDesc[ID_GRAVITY] = "[Skill] Pull enemies to you for 5s, take 30% less damage per pulled (35s CD)"
 	g_szTraitDesc[ID_GUNNER] = "+10%*[Tier] gun damage , -10%*[Tier] recoil"
 	g_szTraitDesc[ID_NO_HEAD_NO_DMG] = "+50% headshot damage ; - 50% non-headshot damage"
 	g_szTraitDesc[ID_OVERCHARGE] = "[Skill] +100% damage for 5s , then -50% damage for 15s (35s CD)"
@@ -218,7 +226,7 @@ initTraits()
 	g_iTraitType[ID_FREE_SHOT] = TYPE_PASSIVE
 	g_iTraitType[ID_FROZEN_SKIN] = TYPE_PASSIVE
 	g_iTraitType[ID_GLASS_CANNON] = TYPE_PASSIVE
-	g_iTraitType[ID_GRAVITY] = TYPE_PASSIVE
+	g_iTraitType[ID_GRAVITY] = TYPE_SKILL
 	g_iTraitType[ID_GUNNER] = TYPE_PASSIVE
 	g_iTraitType[ID_NO_HEAD_NO_DMG] = TYPE_PASSIVE
 	g_iTraitType[ID_OVERCHARGE] = TYPE_SKILL
@@ -469,6 +477,15 @@ Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage
 		if(iVictimTeam == iAttackerTeam)
 			return fDamage;
 	}
+
+	if(g_hasTrait[Victim][ID_GRAVITY] && g_bIsTraitActive[Victim][ID_GRAVITY])
+	{
+		if(g_iGravityPullCount[Victim] > 3)
+			return 0.0;
+
+		dmg *= 1.0 - g_iGravityPullCount[Victim] * 0.3;
+	}
+
 	if(g_hasTrait[Victim][ID_GLASS_CANNON])
 		dmg *= 1.5;
 	// ==Toughness== //
@@ -559,17 +576,17 @@ Float:Ham_TakeDamage_Post_Human_Trait(Victim, iInflictor, Attacker, Float:fDamag
 // ========================== Skills =========================== //
 public UseSkill1(id)
 {
-	use_skill(id, 1);
+	use_skill(id, 0);
 }
 
 public UseSkill2(id)
 {
-	use_skill(id, 2);
+	use_skill(id, 1);
 }
 
 public UseSkill3(id)
 {
-	use_skill(id, 3);
+	use_skill(id, 2);
 }
 
 use_skill(id, iSlot)
@@ -583,6 +600,15 @@ use_skill(id, iSlot)
 		g_bIsTraitActive[id][iTraitId] = true;
 		set_task(DURATION_OVERCHARGE_ACTIVE, "task_overcharge_to_weak", id + TASKID_OVERCHARGE_TO_WEAK);
 		Make_ProgressBar(id , DURATION_OVERCHARGE_ACTIVE);
+		client_cmd(id, "spk %s", SOUND_BUFF);
+	}
+	else if (iTraitId == ID_GRAVITY)
+	{
+		g_iTraitCooldown[id][iTraitId] = COOLDOWN_OVERCHARGE;
+		g_bIsTraitActive[id][iTraitId] = true;
+		set_task_ex(INTERVAL_GRAVITY_PULL, "task_gravity_pull" , id + TASKID_GRAVITY_PULL , "" ,0 , SetTask_RepeatTimes , REPEAT_TIME_GRAVITY_PULL)
+		set_task(DURATION_GRAVITY_PULL , "task_gravity_pull_end", id + TASKID_GRAVITY_PULL_END)
+		Make_ProgressBar(id , DURATION_GRAVITY_PULL);
 		client_cmd(id, "spk %s", SOUND_BUFF);
 	}
 }
@@ -600,6 +626,21 @@ public task_overcharge_weak_end(taskId)
 {
 	new id = taskId - TASKID_OVERCHARGE_WEAK_END
 	g_bIsOverchargeWeak[id] = false;
+}
+
+// ------
+
+public task_gravity_pull(taskId)
+{
+	new id = taskId - TASKID_GRAVITY_PULL
+	new iPullCount = pullEntitiesTowardsTarget(id , GRAVITY_RADIUS);
+	g_iGravityPullCount[id] = iPullCount;
+}
+
+public task_gravity_pull_end(taskId)
+{
+	new id = taskId - TASKID_GRAVITY_PULL_END
+	g_bIsTraitActive[id][ID_GRAVITY] = false;
 }
 
 // ========================================================== //
@@ -646,11 +687,6 @@ Ham_Killed_Pre_Human_Trait(victim, attacker, shouldgib)
 {
 	if(!is_zombie(victim) || !is_user_alive(attacker))
 		return HAM_IGNORED;
-
-	if(g_hasTrait[attacker][ID_GRAVITY])
-	{
-		pullEntitiesTowardsTarget(victim , GRAVITY_RADIUS);
-	}
 
 	if(is_user_alive(attacker) && g_hasTrait[attacker][ID_VAMPIRE])
 	{
@@ -894,11 +930,16 @@ choose_trait_token(id, traitId)
 	g_iTraitTakenCount[id]++;
 	g_hasTrait[id][traitId] = true;
 	client_cmd(id, "spk %s", SOUND_LEARN_TRAIT);
-	for(new i = 0 ; i < sizeof(g_iPlayerSkillSlot[])  ; i++)
+
+	if(g_iTraitType[traitId] == TYPE_SKILL)
 	{
-		if(g_iPlayerSkillSlot[id][i] == -1)
+		for(new i = 0 ; i < sizeof(g_iPlayerSkillSlot[])  ; i++)
 		{
-			g_iPlayerSkillSlot[id][i] = traitId;
+			if(g_iPlayerSkillSlot[id][i] == -1)
+			{
+				g_iPlayerSkillSlot[id][i] = traitId;
+				return;
+			}
 		}
 	}
 }
@@ -938,6 +979,26 @@ stock makeExplosion(Float:fOrigin[3] , iExplosionSpr)
 	message_end();
 }
 
+public draw_beam_to_target(iFromEnt , iToEnt) // set beam (ex. tongue:) if target is player
+{
+	message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
+	write_byte(8)	// TE_BEAMENTS
+	write_short(iFromEnt)
+	write_short(iToEnt)
+	write_short(g_iSprBeamLine)	// sprite index
+	write_byte(0)	// start frame
+	write_byte(0)	// framerate
+	write_byte(2)	// life
+	write_byte(8)	// width
+	write_byte(1)	// noise
+	write_byte(0)	// r, g, b
+	write_byte(181)	// r, g, b
+	write_byte(226)	// r, g, b
+	write_byte(128)	// brightness
+	write_byte(10)	// speed
+	message_end()
+}
+
 stock doRadiusDamage(iAttacker, Float:vecOrigin[3] , bCheckTeam , Float:fRadius, Float:fDamage)
 {
 	new iVictim = -1;
@@ -960,27 +1021,30 @@ stock pullEntitiesTowardsTarget(iTarget, Float:fRadius)
 	new Float:fSrcVec[3] , Float:fDestVec[3] , Float:fDirVelocity[3];
 	pev(iTarget, pev_origin, fSrcVec);
 
-	new victimTeam = _:cs_get_user_team(iTarget);
+	new targetTeam = _:cs_get_user_team(iTarget);
 	new iInRange = -1;
+	new iPullCount = 0;
 	while((iInRange = engfunc(EngFunc_FindEntityInSphere, iInRange, fSrcVec, fRadius)))
 	{
-		if(!is_user_alive(iInRange))
+		if(!is_user_alive(iInRange) || iInRange == iTarget)
 			continue;
 
-		if(!(_:cs_get_user_team(iInRange) == victimTeam))
+		if((_:cs_get_user_team(iInRange) == targetTeam))
 			continue;
 
-		
 		pev(iInRange, pev_origin, fDestVec);
 
 		xs_vec_sub(fSrcVec , fDestVec, fDirVelocity);
 		xs_vec_normalize(fDirVelocity , fDirVelocity);
-		xs_vec_mul_scalar(fDirVelocity , 300.0 , fDirVelocity);
-		fDirVelocity[2] = 150.0
+		xs_vec_mul_scalar(fDirVelocity , 600.0 , fDirVelocity);
 
 		entity_set_vector(iInRange, EV_VEC_velocity, fDirVelocity)
-		// ExecuteHamB(Ham_TakeDamage,iVictim,iAttacker,iAttacker,fDamage,DMG_GRENADE);			
+		
+		draw_beam_to_target(iTarget , iInRange);
+
+		iPullCount++;
 	}
+	return iPullCount;
 }
 
 Make_ProgressBar(id , Float:fTime)
