@@ -622,7 +622,7 @@ set_random_zombie_class(id)
 	cs_set_player_model(id,szModel);
 
 	new iBaseHealth = ArrayGetCell(g_ZombieClassBaseHealth, iClassId);
-	new Float:fHealth = float(iBaseHealth) * get_health_multiplier() * 0.8;
+	new Float:fHealth = float(iBaseHealth) * get_health_multiplier();
 	new iNewHealth = floatround(fHealth);
 	g_iZombieMaxHealth[id] = iNewHealth;
 	set_user_health(id , iNewHealth);

@@ -40,8 +40,8 @@ const zclass_health = 500
 const Float:zclass_speed = 230.0
 const Float:zclass_gravity = 0.7
 const Float:zclass_knockback = 1.0
-// const iShowOnStage = STAGE_5;
-const iShowOnStage = STAGE_1;
+const iShowOnStage = STAGE_5;
+// const iShowOnStage = STAGE_1;
 const iHideOnStage = DO_NOT_HIDE;
 const iMaxCount = 1;
 

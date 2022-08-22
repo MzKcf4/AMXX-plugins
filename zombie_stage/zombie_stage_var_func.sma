@@ -26,7 +26,7 @@ enum _:TOTAL_FORWARDS
 new g_ForwardResult
 new g_Forwards[TOTAL_FORWARDS]
 
-#define STAGE_MULTIPLIER 1.2
+#define STAGE_MULTIPLIER 1.3
 #define PROGRESS_TICK_INTERVAL 2
 
 enum _:GAME_STATE

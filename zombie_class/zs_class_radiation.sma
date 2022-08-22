@@ -23,7 +23,7 @@
 // Classic Zombie Attributes
 new const zombieclass1_name[] = "Radiation Zombie"
 new const zombieclass1_model[] = "zombie_resident"
-const zombieclass1_health = 550
+const zombieclass1_health = 400
 const Float:speed = 230.0
 const Float:gravity = 0.8
 const Float:knockback = 1.1

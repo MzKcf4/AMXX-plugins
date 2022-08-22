@@ -27,7 +27,7 @@
 new const zclass_name[] = "Ranged"
 new const zclass_model[] = "zombie_swarm"
 
-const zclass_health = 500
+const zclass_health = 400
 const Float:zclass_speed = 230.0
 const Float:zclass_gravity = 0.7
 const Float:zclass_knockback = 1.0

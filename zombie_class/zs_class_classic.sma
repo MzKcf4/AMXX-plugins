@@ -11,12 +11,12 @@
 // Classic Zombie Attributes
 new const zombieclass1_name[] = "Normal Zombie"
 new const zombieclass1_model[] = "zombie_swarm"
-const zombieclass1_health = 100
+const zombieclass1_health = 170
 const Float:speed = 240.0
 const Float:gravity = 1.0
 const Float:knockback = 1.0
 const iShowOnStage = STAGE_1;
-const iHideOnStage = DO_NOT_HIDE;
+const iHideOnStage = STAGE_4;
 const iMaxCount = 99;
 
 

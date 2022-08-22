@@ -70,11 +70,11 @@ load_chosen_resource(JSON:jLoadedWpnObj)
 		else
 			formatex(g_szModel_V[g_iWpnCount], charsmax(g_szModel_V[]) , "%s%s%s", MDL_PREFIX , strBuffer, MDL_EXT);
 		// ----p----
-		//json_object_get_string(entryJsonObj, JSON_P_MODEL, strBuffer, charsmax(strBuffer));
-		//if(equali(strBuffer , "null"))
+		json_object_get_string(entryJsonObj, JSON_P_MODEL, strBuffer, charsmax(strBuffer));
+		if(equali(strBuffer , "null"))
 			formatex(g_szModel_P[g_iWpnCount], charsmax(g_szModel_P[]) , "%s%s%s%s", MDL_PREFIX_DEFAULT , MDL_P_PREFIX , MDL_DEFAULT[g_iWpnCswId[g_iWpnCount]], MDL_EXT);
-		//else
-		//	formatex(g_szModel_P[g_iWpnCount], charsmax(g_szModel_P[]) , "%s%s%s", MDL_PREFIX , strBuffer, MDL_EXT);
+		else
+			formatex(g_szModel_P[g_iWpnCount], charsmax(g_szModel_P[]) , "%s%s%s", MDL_PREFIX , strBuffer, MDL_EXT);
 		// ----w----
 		//json_object_get_string(entryJsonObj, JSON_W_MODEL, strBuffer, charsmax(strBuffer));
 		//if(equali(strBuffer , "null"))

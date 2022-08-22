@@ -10,7 +10,7 @@
 
 // Classic Zombie Attributes
 new const zombieclass1_name[] = "Fast"
-new const zombieclass1_model[] = "zombie_burnt"
+new const zombieclass1_model[] = "zombie_skeleton_white"
 const zombieclass1_health = 300
 const Float:zombieclass1_speed = 310.0
 const Float:zombieclass1_gravity = 1.0
