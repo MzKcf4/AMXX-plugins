@@ -3,7 +3,7 @@
 
 #define COOLDOWN_HAWKEYE 10
 #define COOLDOWN_SAFEGUARD 90
-#define COOLDOWN_OVERCHARGE 30
+#define COOLDOWN_OVERCHARGE 35
 
 #define DURATION_GODMODE 5.0
 #define TASKID_REMOVE_GODMODE 6666
@@ -27,6 +27,7 @@
 new const SOUND_LEARN_TRAIT[] = "sound/zombie_plague/levelup_trait.wav"
 new const SOUND_BUFF[] = "sound/zombie_plague/td_buff_2.wav"
 new const SOUND_DEBUFF[] = "sound/zombie_plague/td_debuff.wav"
+new const SOUND_SHOCKWAVE_BLAST[] = "zombie_plague/shockwave_blast.wav"
 
 // === Recoil === //
 new const g_CSW_WPN_ENT_NAME[][] = {"weapon_p228", "weapon_scout", "weapon_xm1014",
@@ -58,6 +59,7 @@ enum _:TOTAL_TRAITS{
 	ID_OVERLOAD,
 	ID_PIERCING,
 	ID_SAFEGUARD,
+	ID_SHOCKWAVE,
 	ID_STEADY_AIM,
 	ID_STUMBLING_BLOCK,
 	ID_TOUGHNESS,
@@ -77,13 +79,14 @@ enum _:TRAIT_TYPE {
 new g_msgScreenFade;
 new g_iBarTime;
 new g_iSprBeamLine;
+new g_iSprShockwave;
 
 new g_szTraitName[TOTAL_TRAITS][32]
 new g_szTraitDesc[TOTAL_TRAITS][96]
 new g_iTraitSource[TOTAL_TRAITS]
 new g_iTraitType[TOTAL_TRAITS]
 new	bool:g_bIsTraitActive[33][TOTAL_TRAITS]
-
+new g_iTraitStack[33][TOTAL_TRAITS]
 
 new g_iPlayerTraitLevel[33][TOTAL_TRAITS]
 
@@ -107,6 +110,7 @@ new g_iExplodeSpriteIndex;
 // For resetting free-shot refund
 new bool:g_bFreeShotInCooldown[33];
 
+// --- Overcharge --- //
 // Weak period after using overcharge
 #define TASKID_OVERCHARGE_TO_WEAK 6800
 #define DURATION_OVERCHARGE_ACTIVE 5.0
@@ -114,6 +118,7 @@ new bool:g_bFreeShotInCooldown[33];
 #define DURATION_OVERCHARGE_WEAK 15.0
 new bool:g_bIsOverchargeWeak[33];
 
+// --- Gravity --- //
 #define GRAVITY_RADIUS 300.0
 
 #define TASKID_GRAVITY_PULL 6900
@@ -122,6 +127,18 @@ new bool:g_bIsOverchargeWeak[33];
 #define DURATION_GRAVITY_PULL 5.2
 #define TASKID_GRAVITY_PULL_END 6950
 new g_iGravityPullCount[33];
+
+
+// --- ShockWave --- //
+#define SHOCKWAVE_RADIUS 300.0
+#define SHOCKWAVE_COOLDOWN 30
+#define SHOCKWAVE_MAX_CHARGE 3
+#define SHOCKWAVE_FREEZE_DURATION 2.0
+
+
+// --- CounterStrike --- //
+// #define TASKID_COUNTERSTRIKE_END
+// new g_iCounterStrikeCharge[33];
 
 plugin_init_human_trait()
 {
@@ -141,7 +158,7 @@ plugin_init_human_trait()
 	set_task(1.0, "show_trait_message", _,_,_,"b");
 	set_task(1.0, "trait_cooldown_tick", _,_,_,"b");
 	g_hudmessage_id_trait = hudmessage_queue_register_left(); 
-	g_hudmessage_id_skill = hudmessage_queue_register_bottom();
+
 	g_msgScreenFade = get_user_msgid( "ScreenFade" );
 	g_iBarTime = get_user_msgid("BarTime")
 }
@@ -153,8 +170,10 @@ plugin_precache_human_trait()
 	precache_generic(SOUND_BUFF);
 	precache_generic(SOUND_DEBUFF);
 
+	precache_sound(SOUND_SHOCKWAVE_BLAST);
 	g_iSprBeamLine = precache_model("sprites/zbeam4.spr")
 	g_iExplodeSpriteIndex = precache_model("sprites/zerogxplode.spr"); 
+	g_iSprShockwave = precache_model("sprites/shockwave.spr");  
 }
 
 initTraits()
@@ -176,6 +195,7 @@ initTraits()
 	g_szTraitName[ID_PIERCING] = "Piercing"
 	g_szTraitName[ID_STEADY_AIM] = "Steady Aim"
 	g_szTraitName[ID_SAFEGUARD] = "Safeguard"
+	g_szTraitName[ID_SHOCKWAVE] = "Shockwave"
 	g_szTraitName[ID_STUMBLING_BLOCK] = "Stumbling Block"
 	g_szTraitName[ID_TOUGHNESS] =	"Toughness"
 	g_szTraitName[ID_VAMPIRE] = "Vampire"
@@ -195,7 +215,8 @@ initTraits()
 	g_szTraitDesc[ID_STEADY_AIM] = "You shoot accurately when jumping / moving"
 	g_szTraitDesc[ID_HAWKEYE] = "[BS only] Next non-headshot must headshot (10s CD); -2s CD per hit"
 	g_szTraitDesc[ID_HEADHUNTER] = "+20% headshot damage"
-	g_szTraitDesc[ID_SAFEGUARD] = "Gain 5 seconds invincibility upon taking fatal damage , instant heals 70 hp"		// Maybe +atk ?
+	g_szTraitDesc[ID_SAFEGUARD] = "Gain 5s invincibility upon taking fatal damage, heals 70 hp"		// Maybe +atk ?
+	g_szTraitDesc[ID_SHOCKWAVE] = "[Skill] Emit a shockwave that stuns enemies (3 charges , 30s CD)"
 	g_szTraitDesc[ID_STUMBLING_BLOCK] = "Shots have 10% (33% for leg hits) chance to immobilize enemy for 1.5 seconds"
 	g_szTraitDesc[ID_TOUGHNESS] =	"-10%*[Lv] incoming damage, 5%*[Lv] chance blocks attack"
 	g_szTraitDesc[ID_VAMPIRE] = "Heals 10[+1*Tier] hp on kills ; or 5 hp when enemies killed nearby"
@@ -216,6 +237,7 @@ initTraits()
 	g_iTraitSource[ID_HAWKEYE] = SRC_TOKEN
 	g_iTraitSource[ID_HEADHUNTER] = SRC_TOKEN
 	g_iTraitSource[ID_SAFEGUARD] = SRC_TOKEN
+	g_iTraitSource[ID_SHOCKWAVE] = SRC_TOKEN
 	g_iTraitSource[ID_STUMBLING_BLOCK] = SRC_TOKEN
 	g_iTraitSource[ID_TOUGHNESS] =	SRC_AMMOPACK
 	g_iTraitSource[ID_VAMPIRE] = SRC_TOKEN
@@ -236,6 +258,7 @@ initTraits()
 	g_iTraitType[ID_HAWKEYE] = TYPE_PASSIVE
 	g_iTraitType[ID_HEADHUNTER] = TYPE_PASSIVE
 	g_iTraitType[ID_SAFEGUARD] = TYPE_PASSIVE
+	g_iTraitType[ID_SHOCKWAVE] = TYPE_SKILL
 	g_iTraitType[ID_STUMBLING_BLOCK] = TYPE_PASSIVE
 	g_iTraitType[ID_TOUGHNESS] = TYPE_PASSIVE
 	g_iTraitType[ID_VAMPIRE] = TYPE_PASSIVE
@@ -249,6 +272,7 @@ round_start_post_human_trait()
 		{
 			g_hasTrait[i][j] = false;
 			g_iTraitCooldown[i][j] = -1;
+			g_iTraitStack[i][j] = 0;
 			g_iPlayerTraitLevel[i][j] = 0;
 			g_bIsTraitActive[i][j] = false;
 		}
@@ -272,6 +296,13 @@ public trait_cooldown_tick()
 			{
 				g_iTraitCooldown[id][traitId]--;
 			}
+		}
+
+		// Shockwave charges
+		if(g_hasTrait[id][ID_SHOCKWAVE] && g_iTraitCooldown[id][ID_SHOCKWAVE] <= 0 && g_iTraitStack[id][ID_SHOCKWAVE] < SHOCKWAVE_MAX_CHARGE)
+		{
+			g_iTraitStack[id][ID_SHOCKWAVE]++;
+			g_iTraitCooldown[id][ID_SHOCKWAVE] = SHOCKWAVE_COOLDOWN;
 		}
 	}
 }
@@ -299,23 +330,30 @@ public show_trait_message()
 		for(new traitId = 0 ; traitId < TOTAL_TRAITS ; traitId++)
 		{
 			if(!g_hasTrait[id][traitId])	continue;
+			static szTraitStack[5];
+
+			if(g_iTraitStack[id][traitId] <= 0)
+				szTraitStack = "";
+			else
+				formatex(szTraitStack , charsmax(szTraitStack), " {%i}",g_iTraitStack[id][traitId]);
 
 
 			if(g_iTraitType[traitId] == TYPE_SKILL)
 			{
-				static szTraitName[20];
+				static szTraitName[25];
+
 				iOwnSkillCount++;
 				
 				if(g_iTraitCooldown[id][traitId] > 0)
-					formatex(szTraitName , charsmax(szTraitName), "[%i] %s (%i) | ",iOwnSkillCount, g_szTraitName[traitId] , g_iTraitCooldown[id][traitId])
+					formatex(szTraitName , charsmax(szTraitName), "[%i] %s%s (%i) | ",iOwnSkillCount, g_szTraitName[traitId] ,szTraitStack, g_iTraitCooldown[id][traitId])
 				else
-					formatex(szTraitName , charsmax(szTraitName), "[%i] %s | ",iOwnSkillCount, g_szTraitName[traitId])	
+					formatex(szTraitName , charsmax(szTraitName), "[%i] %s%s | ",iOwnSkillCount, g_szTraitName[traitId],szTraitStack)
 				
 				strcat(szMsgSkill, szTraitName, charsmax(szMsgSkill))				
 			} 
 			else if(g_iTraitSource[traitId] == SRC_TOKEN)
 			{
-				static szTraitName[20];
+				static szTraitName[25];
 				if(g_iTraitCooldown[id][traitId] > 0)
 					formatex(szTraitName , charsmax(szTraitName), "%s (%i) | ", g_szTraitName[traitId] , g_iTraitCooldown[id][traitId])
 				else
@@ -356,8 +394,8 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 	if(iVictimTeam == iAttackerTeam)
 		return Damage;
 	
-	static cswId; cswId = get_user_weapon(Attacker);
-	static Float:dmg; dmg = Damage;
+	new cswId; cswId = get_user_weapon(Attacker);
+	new Float:dmg; dmg = Damage;
 	
 	// ==FreeShot== //
 	if(g_hasTrait[Attacker][ID_FREE_SHOT] && cswId != CSW_KNIFE)
@@ -457,10 +495,7 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 		static hitResult; hitResult = get_tr2(Traceresult, TR_iHitgroup);
 		if(random_num(1, 100) < 11 || ((hitResult == HIT_LEFTLEG || hitResult == HIT_RIGHTLEG) && random_num(1, 100) < 33))	
 		{
-			g_bFrozen[Victim] = true;
-			fm_set_rendering(Victim,kRenderFxGlowShell,255,255,255,kRenderNormal,8);
-			remove_task(Victim + TASKID_REMOVE_STUMBLING_BLOCK);
-			set_task(DURATION_STUMBLING_BLOCK, "remove_stumbling_block", Victim + TASKID_REMOVE_STUMBLING_BLOCK);
+			stumble_entity(Victim , DURATION_STUMBLING_BLOCK)
 		}
 	}
 	return dmg;
@@ -535,6 +570,7 @@ Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage
 			makeExplosion(fOrigin, g_iExplodeSpriteIndex)
 			fDiff *= 0.5;
 			doRadiusDamage(Attacker, fOrigin, true, OVERLOAD_RADIUS , fDiff)
+			create_shockwave(fOrigin , 255 ,0 , 0);
 		}
 	}
 	// ==Frozen Skin== //
@@ -592,7 +628,7 @@ public UseSkill3(id)
 use_skill(id, iSlot)
 {
 	new iTraitId = g_iPlayerSkillSlot[id][iSlot];
-	if(iTraitId == -1 || g_iTraitCooldown[id][iTraitId] > 0)		return;
+	if(iTraitId == -1 || (g_iTraitCooldown[id][iTraitId] > 0 && g_iTraitStack[id][iTraitId] <= 0))		return;
 
 	if(iTraitId == ID_OVERCHARGE)
 	{
@@ -610,6 +646,20 @@ use_skill(id, iSlot)
 		set_task(DURATION_GRAVITY_PULL , "task_gravity_pull_end", id + TASKID_GRAVITY_PULL_END)
 		Make_ProgressBar(id , DURATION_GRAVITY_PULL);
 		client_cmd(id, "spk %s", SOUND_BUFF);
+	}
+	else if (iTraitId == ID_SHOCKWAVE)
+	{
+		console_print(0, "Stacks %i" , g_iTraitStack[id][iTraitId]);
+		if(g_iTraitStack[id][iTraitId] <= 0)	return;
+		g_iTraitStack[id][iTraitId]--;
+		g_iTraitCooldown[id][iTraitId] = SHOCKWAVE_COOLDOWN;
+
+		new Float:fOrigin[3]
+		pev(id, pev_origin, fOrigin);
+
+		create_shockwave(fOrigin , 0 ,0 , 255);
+		freezeEntitiesAroundTarget(id, SHOCKWAVE_RADIUS)
+		emit_sound(id, CHAN_AUTO, SOUND_SHOCKWAVE_BLAST, VOL_NORM, ATTN_NORM, 0, PITCH_NORM) 
 	}
 }
 
@@ -1045,6 +1095,102 @@ stock pullEntitiesTowardsTarget(iTarget, Float:fRadius)
 		iPullCount++;
 	}
 	return iPullCount;
+}
+
+freezeEntitiesAroundTarget(iTarget, Float:fRadius)
+{
+	new Float:fSrcVec[3]
+	pev(iTarget, pev_origin, fSrcVec);
+
+	new targetTeam = _:cs_get_user_team(iTarget);
+	new iInRange = -1;
+	while((iInRange = engfunc(EngFunc_FindEntityInSphere, iInRange, fSrcVec, fRadius)))
+	{
+		if(!is_user_alive(iInRange) || iInRange == iTarget)
+			continue;
+
+		if((_:cs_get_user_team(iInRange) == targetTeam))
+			continue;
+
+		stumble_entity(iInRange , SHOCKWAVE_FREEZE_DURATION);
+	}
+}
+
+stumble_entity(iEnt, Float:fDuration)
+{
+	g_bFrozen[iEnt] = true;
+	fm_set_rendering(iEnt,kRenderFxGlowShell,255,255,255,kRenderNormal,8);
+	remove_task(iEnt + TASKID_REMOVE_STUMBLING_BLOCK);
+	set_task(fDuration, "remove_stumbling_block", iEnt + TASKID_REMOVE_STUMBLING_BLOCK);
+}
+
+create_shockwave(const Float:originF[3] , iRed , iGreen , iBlue)
+{
+	// Smallest ring
+	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
+	write_byte(TE_BEAMCYLINDER) // TE id
+	engfunc(EngFunc_WriteCoord, originF[0]) // x
+	engfunc(EngFunc_WriteCoord, originF[1]) // y
+	engfunc(EngFunc_WriteCoord, originF[2]) // z
+	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
+	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
+	engfunc(EngFunc_WriteCoord, originF[2]+385.0) // z axis
+	write_short(g_iSprShockwave) // sprite
+	write_byte(0) // startframe
+	write_byte(0) // framerate
+	write_byte(4) // life
+	write_byte(60) // width
+	write_byte(0) // noise
+	write_byte(iRed) // red
+	write_byte(iGreen) // green
+	write_byte(iBlue) // blue
+	write_byte(100) // brightness
+	write_byte(0) // speed
+	message_end()
+	
+	// Medium ring
+	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
+	write_byte(TE_BEAMCYLINDER) // TE id
+	engfunc(EngFunc_WriteCoord, originF[0]) // x
+	engfunc(EngFunc_WriteCoord, originF[1]) // y
+	engfunc(EngFunc_WriteCoord, originF[2]) // z
+	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
+	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
+	engfunc(EngFunc_WriteCoord, originF[2]+470.0) // z axis
+	write_short(g_iSprShockwave) // sprite
+	write_byte(0) // startframe
+	write_byte(0) // framerate
+	write_byte(4) // life
+	write_byte(60) // width
+	write_byte(0) // noise
+	write_byte(iRed) // red
+	write_byte(iGreen) // green
+	write_byte(iBlue) // blue
+	write_byte(150) // brightness
+	write_byte(0) // speed
+	message_end()
+	
+	// Largest ring
+	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
+	write_byte(TE_BEAMCYLINDER) // TE id
+	engfunc(EngFunc_WriteCoord, originF[0]) // x
+	engfunc(EngFunc_WriteCoord, originF[1]) // y
+	engfunc(EngFunc_WriteCoord, originF[2]) // z
+	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
+	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
+	engfunc(EngFunc_WriteCoord, originF[2]+555.0) // z axis
+	write_short(g_iSprShockwave) // sprite
+	write_byte(0) // startframe
+	write_byte(0) // framerate
+	write_byte(4) // life
+	write_byte(60) // width
+	write_byte(0) // noise
+	write_byte(iRed) // red
+	write_byte(iGreen) // green
+	write_byte(iBlue) // blue
+	write_byte(200) // brightness
+	write_byte(0) // speed
+	message_end()
 }
 
 Make_ProgressBar(id , Float:fTime)
