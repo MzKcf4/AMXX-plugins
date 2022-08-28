@@ -207,14 +207,14 @@ initTraits()
 	g_szTraitDesc[ID_FROZEN_SKIN] = "50% to freeze the attacker for 1.5 seconds upon taking damage"
 	g_szTraitDesc[ID_GLASS_CANNON] = "+25% damage , +50% incoming damage"
 	g_szTraitDesc[ID_GRAVITY] = "[Skill] Pull enemies to you for 5s, take 30% less damage per pulled (35s CD)"
-	g_szTraitDesc[ID_GUNNER] = "+10%*[Tier] gun damage , -10%*[Tier] recoil"
+	g_szTraitDesc[ID_GUNNER] = "+10%*[Lv] gun damage , -10%*[Lv] recoil"
 	g_szTraitDesc[ID_NO_HEAD_NO_DMG] = "+50% headshot damage ; - 50% non-headshot damage"
 	g_szTraitDesc[ID_OVERCHARGE] = "[Skill] +100% damage for 5s , then -50% damage for 15s (35s CD)"
 	g_szTraitDesc[ID_OVERLOAD] = "When overflow damage > 300 , 50% is converted to explosive damage"
 	g_szTraitDesc[ID_PIERCING] = "Your attack penetrates armor ; + 15% damage to enemy without armor"
 	g_szTraitDesc[ID_STEADY_AIM] = "You shoot accurately when jumping / moving"
 	g_szTraitDesc[ID_HAWKEYE] = "[BS only] Next non-headshot must headshot (10s CD); -2s CD per hit"
-	g_szTraitDesc[ID_HEADHUNTER] = "+20% headshot damage"
+	g_szTraitDesc[ID_HEADHUNTER] = "+20%*[Lv] headshot damage"
 	g_szTraitDesc[ID_SAFEGUARD] = "Gain 5s invincibility upon taking fatal damage, heals 70 hp"		// Maybe +atk ?
 	g_szTraitDesc[ID_SHOCKWAVE] = "[Skill] Emit a shockwave that stuns enemies (3 charges , 30s CD)"
 	g_szTraitDesc[ID_STUMBLING_BLOCK] = "Shots have 10% (33% for leg hits) chance to immobilize enemy for 1.5 seconds"
@@ -235,7 +235,7 @@ initTraits()
 	g_iTraitSource[ID_PIERCING] = SRC_TOKEN
 	g_iTraitSource[ID_STEADY_AIM] = SRC_TOKEN
 	g_iTraitSource[ID_HAWKEYE] = SRC_TOKEN
-	g_iTraitSource[ID_HEADHUNTER] = SRC_TOKEN
+	g_iTraitSource[ID_HEADHUNTER] = SRC_AMMOPACK
 	g_iTraitSource[ID_SAFEGUARD] = SRC_TOKEN
 	g_iTraitSource[ID_SHOCKWAVE] = SRC_TOKEN
 	g_iTraitSource[ID_STUMBLING_BLOCK] = SRC_TOKEN
@@ -461,7 +461,7 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 	{
 		// ==HeadHunter==//
 		if(g_hasTrait[Attacker][ID_HEADHUNTER])
-			dmg *= 1.2;
+			dmg *= 1.0 + ( g_iPlayerTraitLevel[Attacker][ID_HEADHUNTER]* 0.2) ;
 		if(g_hasTrait[Attacker][ID_NO_HEAD_NO_DMG])
 			dmg *= 1.5;
 	}
@@ -503,6 +503,10 @@ Float:Ham_TraceAttack_Pre_Human_Trait(Victim, Attacker, Float:Damage, Float:Dire
 
 Float:Ham_TakeDamage_Pre_Human_Trait(Victim, iInflictor, Attacker, Float:fDamage, m_Damagebits )
 {
+	console_print(0 , "%i" , m_Damagebits == DMG_GRENADE)
+	if(m_Damagebits == DMG_GRENADE)
+		return fDamage;
+	
 	new Float:dmg; dmg = fDamage;
 
 	if(is_user_connected(Attacker))
