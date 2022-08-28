@@ -496,6 +496,8 @@ public Ham_Killed_Post(id, attacker, shouldgib)
 
 	if(is_zombie(id))
 	{
+		Ham_Killed_Post_AmmoPack(id /*, attacker , shouldgib */);
+
 		g_iPlayerZombieClass[id] = NO_CLASS;
 		Ham_Killed_Post_Zombie_Random_Spawn(id /*, attacker , shouldgib */);
 		ExecuteForward(g_Forwards[FW_ZOMBIE_KILLED_POST], g_ForwardResult, id);
@@ -510,9 +512,6 @@ public Ham_Killed_Post(id, attacker, shouldgib)
 	{
 		round_end(WINNER_ZOMBIE)
 	}
-
-	Ham_Killed_Post_AmmoPack(id /*, attacker , shouldgib */);
-
 
 	return HAM_IGNORED;
 }
@@ -642,7 +641,7 @@ set_random_zombie_class(id)
 	g_iPlayerZombieClassPreKill[id] = iClassId;
 	g_iPlayerZombieClass[id] = iClassId;
 	g_fPlayerZombieKnockback[id] = ArrayGetCell(g_ZombieClassKnockback , iClassId);
-
+	
 	return PLUGIN_HANDLED;
 }
 
@@ -657,6 +656,12 @@ Float:get_health_multiplier()
 	fCountMulti = floatpower(get_pcvar_float(cvar_health_multiplier), float(iCount) - 1);
 	fMultiplier = fCountMulti * floatpower(STAGE_MULTIPLIER, float(g_iCurrStage) - 1);
 	return fMultiplier;
+}
+
+get_zombie_base_health(id)
+{
+	new iClassId = g_iPlayerZombieClass[id];
+	return ArrayGetCell(g_ZombieClassBaseHealth, iClassId);
 }
 
 // ==============================================

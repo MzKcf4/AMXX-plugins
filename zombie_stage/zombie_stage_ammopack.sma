@@ -53,7 +53,7 @@ new const g_PAMMO_ID[] =
 
 new g_iWpnAmmoSupply[] = {
 	0, 
-	39,				// "weapon_p228", 
+	52,				// "weapon_p228", 
 	0, 				// weapon_shield
 	5,				// "weapon_scout", 
 	0,				// weapon_hegrenade 
@@ -88,8 +88,8 @@ new g_iWpnAmmoSupply[] = {
 
 new g_iAmmoPack[33];
 new g_hudmessage_id_ammopack;
-new g_iCurrAmmoBoxDropChance = 10;
-new cvar_ammo_box_drop_chance_base = 10;
+new g_iExtraDropChance = 0;
+new cvar_ammo_box_drop_chance_base_health = 10;
 new cvar_ammo_box_drop_chance_increment = 10;
 
 new const CLASSNAME_AMMOBOX[] = "ammo_box";
@@ -102,7 +102,7 @@ plugin_init_ammopack()
 
 	register_touch(CLASSNAME_AMMOBOX , "player" , "Fw_Touch_AmmoBox");
 
-	cvar_ammo_box_drop_chance_base = register_cvar("zs_ammo_box_drop_chance_base", "10")
+	cvar_ammo_box_drop_chance_base_health = register_cvar("zs_ammo_box_drop_chance_base_health", "200")
 	cvar_ammo_box_drop_chance_increment = register_cvar("zs_ammo_box_drop_chance_increment", "5")
 
 	g_hudmessage_id_ammopack = hudmessage_queue_register_left();
@@ -120,7 +120,6 @@ round_start_post_ammopack()
 		g_iAmmoPack[i] = 3;
 	}
 	destroy_all_ammobox();
-	g_iCurrAmmoBoxDropChance = get_pcvar_num(cvar_ammo_box_drop_chance_base);
 
 	remove_task(TASK_SHOW_AMMOPACK)
 	set_task(1.0, "show_ammo_pack", TASK_SHOW_AMMOPACK, _, _, "b")
@@ -139,13 +138,17 @@ Ham_Killed_Post_AmmoPack(victim /*, attacker, shouldgib */)
 	if(!is_zombie(victim) || g_iGameState == STATE_REST)
 		return;
 
-	if(random_num(0 , 100) > g_iCurrAmmoBoxDropChance)
+	new iBaseHealth = get_zombie_base_health(victim);
+	new Float:chance = float(iBaseHealth) / get_pcvar_num(cvar_ammo_box_drop_chance_base_health) * 10.0 + g_iExtraDropChance;
+	console_print(0 , "%i -> %f" , iBaseHealth , chance)
+
+	if(random_num(0 , 100) > chance)
 	{
-		g_iCurrAmmoBoxDropChance += get_pcvar_num(cvar_ammo_box_drop_chance_increment);
+		g_iExtraDropChance += get_pcvar_num(cvar_ammo_box_drop_chance_increment);
 	}
 	else
 	{
-		g_iCurrAmmoBoxDropChance = get_pcvar_num(cvar_ammo_box_drop_chance_base);
+		g_iExtraDropChance = 0;
 		static Float:fOrigin[3]
 		entity_get_vector(victim, EV_VEC_origin, fOrigin)
 		create_ammobox_ent(fOrigin)
